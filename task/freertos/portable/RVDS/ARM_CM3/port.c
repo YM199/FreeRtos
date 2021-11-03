@@ -88,11 +88,11 @@ __asm void vPortSVCHandler(void)
 	
 	PRESERVE8
 	
-	ldr r3, = pxCurrentTCB;
+	ldr r3, = pxCurrentTCB;/*指向Task1TCB或Task1TCB*/
 	ldr r1, [r3]
 	ldr r0, [r1]
 	/*r0此时等于栈顶指针，任务栈在pxPortInitialiseStack已经被初始化好了*/
-	ldmia r0!, {r4-r11}    /*将r4和r11弹出堆栈*/
+	ldmia r0!, {r4-r11}    /*将多个字从存储器加载到CPU寄存器，*/
 	msr psp, r0
 	isb
 	mov r0, #0
