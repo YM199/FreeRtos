@@ -28,21 +28,20 @@ StackType_t *pxPortInitialiseStack(StackType_t *pxTopOfStack,
 								   void *pvParameters
 								  )
 {
-	/*异常发生时，自动加载到CPU寄存器的内容*/
+	/*这个栈里面的寄存器是虚拟的，到时候要放到实际寄存器里面*/
 	pxTopOfStack--;
-	*pxTopOfStack = portINITIAL_XPSR;
+	*pxTopOfStack = portINITIAL_XPSR;//??? 为什么是0x1000 0000L
 	pxTopOfStack--;
-	*pxTopOfStack = ((StackType_t)pxCode) & portSTART_ADDRESS_MASK;
+	*pxTopOfStack = ((StackType_t)pxCode) & portSTART_ADDRESS_MASK;//R15 ??? 为什么任务的入口地址是这么多
 	pxTopOfStack--;
-	*pxTopOfStack = (StackType_t)prvTaskExitError;
-	pxTopOfStack -= 5;/*R12 R3 R2 and R1默认初始化为0*/
-	*pxTopOfStack = (StackType_t) pvParameters;
+	*pxTopOfStack = (StackType_t)prvTaskExitError;//R14 任务通常是不会返回的
+	pxTopOfStack -= 5;/*R12 R3 R2 R1默认初始化为0*/
+	*pxTopOfStack = (StackType_t) pvParameters;//R0
 	
-	/*异常发生时，手动加载到CPU寄存器的内容*/
-	pxTopOfStack -= 8;
+	pxTopOfStack -= 8;/*R11~R4的寄存器默认为0*/
 	
 	/*返回栈顶指针，此时pxTopOfStack指向空闲栈*/
-	return pxTopOfStack;
+	return pxTopOfStack;//pxTopOfStack指向R4
 }
 
 
@@ -59,6 +58,9 @@ BaseType_t xPortStarSheduler(void)
 
 
 
+/**
+ * @brief   更新MSP、产生SVC系统调用
+*/
 __asm void prvStartFirstTask( void )
 {
 	PRESERVE8             /*8字节对齐*/
@@ -66,7 +68,7 @@ __asm void prvStartFirstTask( void )
 	ldr r0,=0xE00ED08
 	ldr r0, [r0] 	
 	ldr r0, [r0]
-	msr msp, r0        
+	msr msp, r0/*MSP=0x2000_08DB,主堆栈的栈顶指针*/
 	
 	/*使能全局中断*/
 	cpsie i
@@ -89,7 +91,7 @@ __asm void vPortSVCHandler(void)
 	ldr r3, = pxCurrentTCB;
 	ldr r1, [r3]
 	ldr r0, [r1]
-	/*r0此时等于栈顶指针*/
+	/*r0此时等于栈顶指针，任务栈在pxPortInitialiseStack已经被初始化好了*/
 	ldmia r0!, {r4-r11}    /*将r4和r11弹出堆栈*/
 	msr psp, r0
 	isb
