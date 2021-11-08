@@ -259,23 +259,25 @@ void vApplicationGetIdleTaskMemory( TCB_t **ppxIdleTaskTCBBuffer,
 void vTaskStartScheduler( void )
 {
 /*======================================创建空闲任务start==============================================*/     
-    TCB_t *pxIdleTaskTCBBuffer = NULL;               /* 用于指向空闲任务控制块 */
-    StackType_t *pxIdleTaskStackBuffer = NULL;       /* 用于空闲任务栈起始地址 */
-    uint32_t ulIdleTaskStackSize;
-    
-    /* 获取空闲任务的内存：任务栈和任务TCB */
-    vApplicationGetIdleTaskMemory( &pxIdleTaskTCBBuffer, 
-                                   &pxIdleTaskStackBuffer, 
-                                   &ulIdleTaskStackSize );    
-    
-    xIdleTaskHandle = xTaskCreateStatic( (TaskFunction_t)prvIdleTask,              /* 任务入口 */
-					                     (char *)"IDLE",                           /* 任务名称，字符串形式 */
-					                     (uint32_t)ulIdleTaskStackSize ,           /* 任务栈大小，单位为字 */
-					                     (void *) NULL,                            /* 任务形参 */
-					                     (StackType_t *)pxIdleTaskStackBuffer,     /* 任务栈起始地址 */
-					                     (TCB_t *)pxIdleTaskTCBBuffer );           /* 任务控制块 */
-    /* 将任务添加到就绪列表 */                                 
-    vListInsertEnd( &( pxReadyTasksLists[0] ), &( ((TCB_t *)pxIdleTaskTCBBuffer)->xStateListItem ) );
+	TCB_t *pxIdleTaskTCBBuffer = NULL;        //指向空闲任务控制块
+	StackType_t *pxIdleTaskStackBuffer = NULL;//空闲任务栈起始地址 
+	uint32_t ulIdleTaskStackSize;
+	
+	/*获取空闲任务的内存：任务栈和任务TCB*/
+	vApplicationGetIdleTaskMemory(&pxIdleTaskTCBBuffer,
+								  &pxIdleTaskStackBuffer,
+								  &ulIdleTaskStackSize);
+	
+	/*创建空闲任务*/
+	xIdleTaskHandle = xTaskCreateStatic((TaskFunction_t)prvIdleTask,//任务入口
+									    (char *)"IDLE",//任务名称
+										(uint32_t)ulIdleTaskStackSize,//任务栈大小
+										(void *)NULL,//任务形参
+										(StackType_t *)pxIdleTaskStackBuffer,//任务栈起始地址
+										(TCB_t *)pxIdleTaskTCBBuffer);//任务控制块
+	
+	//将任务添加到就绪列表
+	vListInsertEnd(&(pxReadyTasksLists[0]), &(((TCB_t *)pxIdleTaskTCBBuffer)->xStateListItem));
 /*======================================创建空闲任务end================================================*/
                                          
     /* 手动指定第一个运行的任务 */

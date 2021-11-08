@@ -159,8 +159,8 @@ void Task2_Entry( void *p_arg )
 }
 
 /* 获取空闲任务的内存 */
-StackType_t IdleTaskStack[configMINIMAL_STACK_SIZE];
-TCB_t IdleTaskTCB;
+StackType_t IdleTaskStack[configMINIMAL_STACK_SIZE];//定义空闲任务的栈
+TCB_t IdleTaskTCB;//空闲任务的任务控制块
 void vApplicationGetIdleTaskMemory( TCB_t **ppxIdleTaskTCBBuffer, 
                                     StackType_t **ppxIdleTaskStackBuffer, 
                                     uint32_t *pulIdleTaskStackSize )
