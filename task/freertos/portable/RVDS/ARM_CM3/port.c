@@ -113,30 +113,32 @@ __asm void xPortPendSVHandler(void)
 	
 	PRESERVE8;
 	
-	mrs r0, psp;
+	mrs r0, psp;//PSP是上一个任务的堆栈指针
 	isb;
 	
 	ldr r3, = pxCurrentTCB
-	ldr r2, [r3]
+	ldr r2, [r3]//r2相当于pxCurrentTCB
 	
-	stmdb r0!, {r4-r11}
-	str r0, [r2]
+	stmdb r0!, {r4-r11}//手动加载到寄存器的内容
+	str r0, [r2]//将r0的值存储到上一个任务的栈顶指针pxTopOfStack
+	/*上文保存完成*/
 	
-	stmdb sp!, {r3,r14}
+	
+	stmdb sp!, {r3,r14}//将r3和r14压入堆栈MSP
 	mov r0, #configMAX_SYSCALL_INTERRUPT_PRIORITY
 	msr basepri, r0
 	dsb
 	isb
-    bl vTaskSwitchContext
+    bl vTaskSwitchContext//更新pxCurrentTCB
 	mov r0, #0
 	msr basepri, r0
-	ldmia sp!, {r3,r14}
+	ldmia sp!, {r3,r14}//从MSP中恢复寄存器r13和r14的值
     	
-	ldr r1, [r3]
-	ldr r0, [r1]
-	ldmia r0!, {r4-r11}
-	msr psp, r0
+	ldr r1, [r3]//r1指向了下一个需要运行的任务的TCB
+	ldr r0, [r1]//r0指向了下一个需要运行的任务的栈顶指针
+	ldmia r0!, {r4-r11}//将下一个要运行的任务的任务栈的内容加载到 CPU 寄存器 r4~r11
+	msr psp, r0//更新psp
 	isb
-	bx r14
+	bx r14//R14保存了子程序的返回地址
 	nop
 }
