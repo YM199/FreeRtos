@@ -1,6 +1,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "ARMCM3.h"
+
+static UBaseType_t uxCriticalNesting = 0xaaaaaaaa;
+
+
 #define portINITIAL_XPSR          (0x01000000)
 #define portSTART_ADDRESS_MASK    ((StackType_t)0xfffffffeUL)
 
@@ -141,4 +145,39 @@ __asm void xPortPendSVHandler(void)
 	isb
 	bx r14//R14保存了子程序的返回地址
 	nop
+}
+
+/*
+*************************************************************************
+*                             临界段相关函数
+*************************************************************************
+*/
+
+/**
+ * @brief 进入临界段
+*/
+void vPortEnterCritical( void )
+{
+	portDISABLE_INTERRUPTS();
+	uxCriticalNesting++;//临界段嵌套计数器
+
+	if( uxCriticalNesting == 1 )//表示一层嵌套
+	{
+		//configASSERT( ( portNVIC_INT_CTRL_REG & portVECTACTIVE_MASK ) == 0 );
+	}
+}
+
+
+/**
+ * @brief 退出临界段，不带保护
+*/
+void vPortExitCritical( void )
+{
+	//configASSERT( uxCriticalNesting );
+	uxCriticalNesting--;
+    
+	if( uxCriticalNesting == 0 )
+	{
+		portENABLE_INTERRUPTS();
+	}
 }
