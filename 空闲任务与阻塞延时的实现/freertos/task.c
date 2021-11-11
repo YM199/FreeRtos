@@ -381,18 +381,18 @@ void vTaskSwitchContext( void )
 
 #endif
 
-void vTaskDelay( const TickType_t xTicksToDelay )
+void vTaskDelay(const TickType_t xTicksToDelay)
 {
-    TCB_t *pxTCB = NULL;
-    
-    /* 获取当前任务的TCB */
-    pxTCB = pxCurrentTCB;
-    
-    /* 设置延时时间 */
-    pxTCB->xTicksToDelay = xTicksToDelay;
-    
-    /* 任务切换 */
-    taskYIELD();
+	TCB_t *pxTCB = NULL;
+	
+	//获取当前任务的TCB
+	pxTCB = pxCurrentTCB;
+	
+	//设置延时时间
+	pxTCB->xTicksToDelay = xTicksToDelay;
+	
+	//任务切换
+	taskYIELD();
 }
 
 
