@@ -91,14 +91,9 @@ extern "C" {
 #define tskKERNEL_VERSION_BUILD 0
 
 /**
- * task. h
- *
- * Type by which tasks are referenced.  For example, a call to xTaskCreate
- * returns (via a pointer parameter) an TaskHandle_t variable that can then
- * be used as a parameter to vTaskDelete to delete the task.
- *
- * \defgroup TaskHandle_t TaskHandle_t
- * \ingroup Tasks
+* 任务句柄是一个指针，用于指向一个任务，当任务创建好之后，它就具有了一个任务句柄
+* 以后我们要想操作这个任务都需要通过这个任务句柄，如果是自身的任务操作自己，那么
+* 这个句柄可以为 NULL。
  */
 typedef void * TaskHandle_t;
 

@@ -1,6 +1,10 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
+//该部分宏定义是自己添加的，默认没有
+//#define configSUPPORT_STATIC_ALLOCATION  1//静态创建任务
+#define configSUPPORT_DYNAMIC_ALLOCATION 1//动态创建任务
+#define configUSE_TIMERS 1//打开软件定时器
 
 #define configUSE_PREEMPTION		1//置 1：FreeRTOS 使用抢占式调度器；置 0：FreeRTOS 使用协作式调度器（时间片）
 #define configUSE_IDLE_HOOK			0//配置空闲钩子函数
@@ -9,7 +13,7 @@
 #define configTICK_RATE_HZ			( ( TickType_t ) 1000 )//SysTick 每秒中断多少次
 #define configMAX_PRIORITIES		( 5 )//最大任务优先级的宏
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 128 )//栈的大小
-#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 17 * 1024 ) )//FreeRTOS 内核总计可用的有效的 RAM 大小
+#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 17 * 1024 ) )//堆内存的大小，用于动态分配
 #define configMAX_TASK_NAME_LEN		( 16 )//TASK_NAME的字符串长度
 #define configUSE_TRACE_FACILITY	0//可视化跟踪调试
 #define configUSE_16_BIT_TICKS		0//定义变量的位数

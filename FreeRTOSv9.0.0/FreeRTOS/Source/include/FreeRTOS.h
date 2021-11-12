@@ -772,8 +772,9 @@ extern "C" {
 	#define portTICK_TYPE_IS_ATOMIC 0
 #endif
 
+//是否静态创建任务，需要在FreeRTOSConfig.h定义
 #ifndef configSUPPORT_STATIC_ALLOCATION
-	/* Defaults to 0 for backward compatibility. */
+	/* 默认为 0 以实现向后兼容. */
 	#define configSUPPORT_STATIC_ALLOCATION 0
 #endif
 

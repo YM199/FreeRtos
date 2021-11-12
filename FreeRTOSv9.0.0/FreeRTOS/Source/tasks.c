@@ -394,7 +394,7 @@ PRIVILEGED_DATA static List_t xPendingReadyList;						/*< Tasks that have been r
 
 /* Other file private variables. --------------------------------*/
 PRIVILEGED_DATA static volatile UBaseType_t uxCurrentNumberOfTasks 	= ( UBaseType_t ) 0U;
-PRIVILEGED_DATA static volatile TickType_t xTickCount 				= ( TickType_t ) 0U;
+PRIVILEGED_DATA static volatile TickType_t xTickCount 				= ( TickType_t ) 0U;//记录系统时间，在节拍定时器(SysTick)中断服务函数中进行自加
 PRIVILEGED_DATA static volatile UBaseType_t uxTopReadyPriority 		= tskIDLE_PRIORITY;
 PRIVILEGED_DATA static volatile BaseType_t xSchedulerRunning 		= pdFALSE;
 PRIVILEGED_DATA static volatile UBaseType_t uxPendedTicks 			= ( UBaseType_t ) 0U;
@@ -672,7 +672,16 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB ) PRIVILEGED_FUNCTION;
 /*-----------------------------------------------------------*/
 
 #if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
-
+	/**
+	 * @brief 动态创建任务
+	 * @param pxTaskCode     任务入口函数
+	 * @param pcName         任务名字
+	 * @param usStackDepth   任务栈大小
+	 * @param pvParameters   任务入口函数参数
+	 * @param uxPriority     任务的优先级
+	 * @param pxCreatedTask  任务控制块指针
+	 * @retval BaseType_t
+	 */
 	BaseType_t xTaskCreate(	TaskFunction_t pxTaskCode,
 							const char * const pcName,
 							const uint16_t usStackDepth,
@@ -1823,11 +1832,14 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB )
 #endif /* ( ( INCLUDE_xTaskResumeFromISR == 1 ) && ( INCLUDE_vTaskSuspend == 1 ) ) */
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief 打开调度器
+ */
 void vTaskStartScheduler( void )
 {
 BaseType_t xReturn;
 
-	/* Add the idle task at the lowest priority. */
+	/* 添加最低优先级的空闲任务 */
 	#if( configSUPPORT_STATIC_ALLOCATION == 1 )
 	{
 		StaticTask_t *pxIdleTaskTCBBuffer = NULL;
@@ -1856,7 +1868,7 @@ BaseType_t xReturn;
 	}
 	#else
 	{
-		/* The Idle task is being created using dynamically allocated RAM. */
+		/* 正在使用动态分配的 RAM 创建空闲任务. */
 		xReturn = xTaskCreate(	prvIdleTask,
 								"IDLE", configMINIMAL_STACK_SIZE,
 								( void * ) NULL,
@@ -1896,7 +1908,7 @@ BaseType_t xReturn;
 		#endif /* configUSE_NEWLIB_REENTRANT */
 
 		xNextTaskUnblockTime = portMAX_DELAY;
-		xSchedulerRunning = pdTRUE;
+		xSchedulerRunning = pdTRUE;//表示调度器开始运行
 		xTickCount = ( TickType_t ) 0U;
 
 		/* If configGENERATE_RUN_TIME_STATS is defined then the following

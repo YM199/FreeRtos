@@ -512,6 +512,11 @@ uint8_t ucBlock;
 }
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief 启动系统节拍定时器
+ * 
+ * @return BaseType_t 
+ */
 BaseType_t xPortStartScheduler( void )
 {
 	/* Setup a timer for the tick ISR is using the preemptive scheduler. */
