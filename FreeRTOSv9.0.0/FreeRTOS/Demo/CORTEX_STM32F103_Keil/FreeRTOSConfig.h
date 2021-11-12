@@ -9,18 +9,17 @@
 #define configTICK_RATE_HZ			( ( TickType_t ) 1000 )//SysTick 每秒中断多少次
 #define configMAX_PRIORITIES		( 5 )//最大任务优先级的宏
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 128 )//栈的大小
-#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 17 * 1024 ) )
-#define configMAX_TASK_NAME_LEN		( 16 )
-#define configUSE_TRACE_FACILITY	0
-#define configUSE_16_BIT_TICKS		0
-#define configIDLE_SHOULD_YIELD		1
+#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 17 * 1024 ) )//FreeRTOS 内核总计可用的有效的 RAM 大小
+#define configMAX_TASK_NAME_LEN		( 16 )//TASK_NAME的字符串长度
+#define configUSE_TRACE_FACILITY	0//可视化跟踪调试
+#define configUSE_16_BIT_TICKS		0//定义变量的位数
+#define configIDLE_SHOULD_YIELD		1//控制任务在空闲优先级中的行为
 
-/* Co-routine definitions. */
-#define configUSE_CO_ROUTINES 		0
+/* 协程定义，FreeRTOS已经不对携程做支持了 */
+#define configUSE_CO_ROUTINES 		0//启用携程，默认关闭（FreeRTOS已经不对携程做支持了）
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
 
-/* Set the following definitions to 1 to include the API function, or zero
-to exclude the API function. */
+/* 将以下定义设置为 1 以包含 API 函数，或设置为零排除 API 函数 */
 
 #define INCLUDE_vTaskPrioritySet		1
 #define INCLUDE_uxTaskPriorityGet		1
@@ -30,9 +29,8 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelayUntil			1
 #define INCLUDE_vTaskDelay				1
 
-/* This is the raw value as per the Cortex-M3 NVIC.  Values can be 255
-(lowest) to 0 (1?) (highest). */
-#define configKERNEL_INTERRUPT_PRIORITY 		255
+/* 这是根据 Cortex-M3 NVIC 的原始值  值可以是 255（最低）到 0（1？）（最高） */
+#define configKERNEL_INTERRUPT_PRIORITY 		255//内核中断优先级
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
 See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY 	191 /* equivalent to 0xb0, or priority 11. */
