@@ -3,12 +3,12 @@
 
 
 #define configUSE_PREEMPTION		1//置 1：FreeRTOS 使用抢占式调度器；置 0：FreeRTOS 使用协作式调度器（时间片）
-#define configUSE_IDLE_HOOK			0
-#define configUSE_TICK_HOOK			0
-#define configCPU_CLOCK_HZ			( ( unsigned long ) 72000000 )	
-#define configTICK_RATE_HZ			( ( TickType_t ) 1000 )
-#define configMAX_PRIORITIES		( 5 )
-#define configMINIMAL_STACK_SIZE	( ( unsigned short ) 128 )
+#define configUSE_IDLE_HOOK			0//配置空闲钩子函数
+#define configUSE_TICK_HOOK			0//配置时间片钩子函数
+#define configCPU_CLOCK_HZ			( ( unsigned long ) 72000000 )//设置系统时钟	
+#define configTICK_RATE_HZ			( ( TickType_t ) 1000 )//SysTick 每秒中断多少次
+#define configMAX_PRIORITIES		( 5 )//最大任务优先级的宏
+#define configMINIMAL_STACK_SIZE	( ( unsigned short ) 128 )//栈的大小
 #define configTOTAL_HEAP_SIZE		( ( size_t ) ( 17 * 1024 ) )
 #define configMAX_TASK_NAME_LEN		( 16 )
 #define configUSE_TRACE_FACILITY	0
