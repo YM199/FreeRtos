@@ -7,6 +7,7 @@
 /plugin/;
 
 /{
+    /*LCD属性设置*/
     fragment@0{
         target = <&lcdif>;
         __overlay__{
@@ -42,6 +43,7 @@
         };
     };
 
+    /*LCD引脚配置*/
     fragment@1{
         target = <&iomuxc>;
         __overlay__{
@@ -92,6 +94,7 @@
         };
     };
 
+    /*LCD背光PWM设置*/
     fragment@3{
         target-path = "/";
         __overlay__ {
