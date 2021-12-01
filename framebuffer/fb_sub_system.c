@@ -13,121 +13,27 @@
 
 #include "imx6ull_elcdif.h"
 
+#define RED 	0
+#define GREEN 	1
+#define BLUE 	2
+#define TRANSP 	3
 
 
+static struct fb_info *lcdfb_info;
 
-/**
- * @brief device和driver匹配成功调用该函数
- * 
- * @param pdev 平台设备 
- * @return int 
- */
-static int lcd_driver_probe(struct platform_device *pdev)
-{
-    struct device_node *display_np;
-    struct display_timings *timings = NULL;
-    struct display_timing dt = NULL;
-    struct resource *res = NULL;
-    unsigned int bits_per_pixel;
-    unsigned int bus_width;
+static struct clk *clk_pix;
+static struct clk *clk_axi;
 
-    res = platform_get_resource(pdev, IORESOURCE, 0);
-    elcdif = devm_ioremap_resource(&pdev->dev,res);
+static u32 pseudo_palette[16];
 
-    display_np = of_parse_phandle(pdev->dev.of_node, "display", 0);
-    timings = of_get_display_timings(display_np);
-    dt = timings->timings[timings->native_mode];
+static struct imx6ull_elcdif *elcdif;
 
-    of_property_read_u32(display_np, "bits-per-pixel",&bits_per_pixel);
-    if(bits_per_pixel != 16)
-    {
-        printk(KERN_EMERG"not support %d bpp!\n", bits_per_pixel);
-        return -1;
-    }
-
-    of_property_read_u32(display_np, "bus-width", &bus_width);
-
-    clk_pix = devm_clk_get(&pdev->dev, "pix");
-    clk_axi = devm_clk_get(&pdev->dev, "axi");
-
-    clk_set_rate(clk_pix, dt->pixelclock.typ);
-
-    clk_prepare_enable(clk_pix);
-    clk_prepare_enable(clk_axi);
-
-    /*分配一个fb_info结构体*/
-    lcdfb_info = framebuffer_alloc(0, &pdev->dev);
-
-    /*LCD屏幕参数设置*/
-    lcdfb_info->var.xres = dt->hactive.typ;
-    lcdfb_info->var.yres = dt->vactive.typ;
-    lcdfb_info->var.width = dt->hactive.typ;
-    lcdfb_info->var.height = dt->vactive.typ;
-    lcdfb_info->var.xres_virtual = dt->hactive.typ;
-    lcdfb_info->var.yres_virtual = dt->vactive.typ;
-    lcdfb_info->var.bits_per_pixel = bits_per_pixel;
-    
-
-    /* LCD信号时序设置 */
-    lcdfb_info->var.pixelclock = dt->pixelclock.typ;
-    lcdfb_info->var.left_margin = dt->hback_porch.typ;
-    lcdfb_info->var.right_margin = dt->hfront_porch.typ;
-    lcdfb_info->var.upper_margin = dt->vback_porch.typ;
-    lcdfb_info->var.lower_margin = dt->vfront_porch.typ;
-    lcdfb_info->var.vsync_len = dt->vsync_len.typ;
-    lcdfb_info->var.hsync_len = dt->hsync_len.typ;
-
-
-    /* LCD RGB格式设置, 这里使用的是RGB565 */
-    lcdfb_info->var.red.offset   = 11;
-    lcdfb_info->var.red.length   = 5;
-    lcdfb_info->var.green.offset = 5;
-    lcdfb_info->var.green.length = 6;
-    lcdfb_info->var.blue.offset  = 0;
-    lcdfb_info->var.blue.length  = 5;
-
-    /* 设置固定参数 */
-    strcpy(lcdfb_info->fix.id, "fire,lcd");
-    lcdfb_info->fix.type   = FB_TYPE_PACKED_PIXELS;
-    lcdfb_info->fix.visual = FB_VISUAL_TRUECOLOR;
-    lcdfb_info->fix.line_length = dt->hactive.typ * bits_per_pixel / 8;
-    lcdfb_info->fix.smem_len    = dt->hactive.typ * dt->vactive.typ * bits_per_pixel / 8;
-  
-    /* 其他参数设置 */
-    lcdfb_info->screen_size = dt->hactive.typ * dt->vactive.typ * bits_per_pixel / 8;
-  
-    /* dma_alloc_writecombine：分配smem_len大小的内存，返回screen_base虚拟地址，对应的物理地址保存在smem_start */
-    lcdfb_info->screen_base = dma_alloc_writecombine(&pdev->dev, lcdfb_info->fix.smem_len, (dma_addr_t*)&lcdfb_info->fix.smem_start, GFP_KERNEL);
-    lcdfb_info->pseudo_palette = pseudo_palette;
-    lcdfb_info->fbops = &lcdfb_ops;
-  
-    /* elcdif控制器硬件初始化 */
-    imx6ull_elcdif_init(elcdif, lcdfb_info, dt, bus_width);
-    imx6ull_elcdif_enable(elcdif);
-  
-    /* 注册fb_info结构体 */
-    register_framebuffer(lcdfb_info);
-  
-    printk(KERN_EMERG"match success!\n");
-    return 0;
+static struct fb_ops lcdfb_ops = {
+  .owner = THIS_MODULE,
+  .fb_fillrect = cfb_fillrect,
+  .fb_copyarea = cfb_copyarea,
+  .fb_imageblit = cfb_imageblit,
 };
-
-/**
- * @brief 注销fb_info结构体
- * 
- * @param pdev 平台设备
- * @return int 0
- */
-static int lcd_driver_remove(struct platform_device *pdev)
-{
-    unregister_framebuffer(lcdfb_info);
-    imx6ull_elcdif_disable(elcdif);
-    framebuffer_release(lcdfb_info);
-
-    printk(KERN_EMERG"module exit!\n");
-    return 0;   
-}
-
 
 /****************LCD控制器硬件操作******************/
 /**
@@ -264,6 +170,122 @@ static int imx6ull_elcdif_init(struct imx6ull_elcdif *elcdif,
 }
 /**********************END*************************/
 
+
+/**
+ * @brief device和driver匹配成功调用该函数
+ * 
+ * @param pdev 平台设备 
+ * @return int 
+ */
+static int lcd_driver_probe(struct platform_device *pdev)
+{
+    struct device_node *display_np;
+    struct display_timings *timings = NULL;
+    struct display_timing *dt = NULL;
+    struct resource *res = NULL;
+    unsigned int bits_per_pixel;
+    unsigned int bus_width;
+
+    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+    elcdif = devm_ioremap_resource(&pdev->dev,res);
+
+    display_np = of_parse_phandle(pdev->dev.of_node, "display", 0);
+    timings = of_get_display_timings(display_np);
+    dt = timings->timings[timings->native_mode];
+
+    of_property_read_u32(display_np, "bits-per-pixel",&bits_per_pixel);
+    if(bits_per_pixel != 16)
+    {
+        printk(KERN_EMERG"not support %d bpp!\n", bits_per_pixel);
+        return -1;
+    }
+
+    of_property_read_u32(display_np, "bus-width", &bus_width);
+
+    clk_pix = devm_clk_get(&pdev->dev, "pix");
+    clk_axi = devm_clk_get(&pdev->dev, "axi");
+
+    clk_set_rate(clk_pix, dt->pixelclock.typ);
+
+    clk_prepare_enable(clk_pix);
+    clk_prepare_enable(clk_axi);
+
+    /*分配一个fb_info结构体*/
+    lcdfb_info = framebuffer_alloc(0, &pdev->dev);
+
+    /*LCD屏幕参数设置*/
+    lcdfb_info->var.xres = dt->hactive.typ;
+    lcdfb_info->var.yres = dt->vactive.typ;
+    lcdfb_info->var.width = dt->hactive.typ;
+    lcdfb_info->var.height = dt->vactive.typ;
+    lcdfb_info->var.xres_virtual = dt->hactive.typ;
+    lcdfb_info->var.yres_virtual = dt->vactive.typ;
+    lcdfb_info->var.bits_per_pixel = bits_per_pixel;
+    
+
+    /* LCD信号时序设置 */
+    lcdfb_info->var.pixclock = dt->pixelclock.typ;
+    lcdfb_info->var.left_margin = dt->hback_porch.typ;
+    lcdfb_info->var.right_margin = dt->hfront_porch.typ;
+    lcdfb_info->var.upper_margin = dt->vback_porch.typ;
+    lcdfb_info->var.lower_margin = dt->vfront_porch.typ;
+    lcdfb_info->var.vsync_len = dt->vsync_len.typ;
+    lcdfb_info->var.hsync_len = dt->hsync_len.typ;
+
+
+    /* LCD RGB格式设置, 这里使用的是RGB565 */
+    lcdfb_info->var.red.offset   = 11;
+    lcdfb_info->var.red.length   = 5;
+    lcdfb_info->var.green.offset = 5;
+    lcdfb_info->var.green.length = 6;
+    lcdfb_info->var.blue.offset  = 0;
+    lcdfb_info->var.blue.length  = 5;
+
+    /* 设置固定参数 */
+    strcpy(lcdfb_info->fix.id, "fire,lcd");
+    lcdfb_info->fix.type   = FB_TYPE_PACKED_PIXELS;
+    lcdfb_info->fix.visual = FB_VISUAL_TRUECOLOR;
+    lcdfb_info->fix.line_length = dt->hactive.typ * bits_per_pixel / 8;
+    lcdfb_info->fix.smem_len    = dt->hactive.typ * dt->vactive.typ * bits_per_pixel / 8;
+  
+    /* 其他参数设置 */
+    lcdfb_info->screen_size = dt->hactive.typ * dt->vactive.typ * bits_per_pixel / 8;
+  
+    /* dma_alloc_writecombine：分配smem_len大小的内存，返回screen_base虚拟地址，对应的物理地址保存在smem_start */
+    lcdfb_info->screen_base = dma_alloc_writecombine(&pdev->dev, lcdfb_info->fix.smem_len, (dma_addr_t*)&lcdfb_info->fix.smem_start, GFP_KERNEL);
+    lcdfb_info->pseudo_palette = pseudo_palette;
+    lcdfb_info->fbops = &lcdfb_ops;
+  
+    /* elcdif控制器硬件初始化 */
+    imx6ull_elcdif_init(elcdif, lcdfb_info, dt, bus_width);
+    imx6ull_elcdif_enable(elcdif);
+  
+    /* 注册fb_info结构体 */
+    register_framebuffer(lcdfb_info);
+  
+    printk(KERN_EMERG"match success!\n");
+    return 0;
+}
+
+/**
+ * @brief 注销fb_info结构体
+ * 
+ * @param pdev 平台设备
+ * @return int 0
+ */
+static int lcd_driver_remove(struct platform_device *pdev)
+{
+    unregister_framebuffer(lcdfb_info);
+    imx6ull_elcdif_disable(elcdif);
+    framebuffer_release(lcdfb_info);
+
+    printk(KERN_EMERG"module exit!\n");
+    return 0;   
+}
+
+
+
+
 /**
  * @brief 设备树匹配列表
  * 
@@ -283,7 +305,7 @@ static struct platform_driver lcd_driver = {
     .driver = {
         .name = "lcd_drv",
         .of_match_table = lcd_of_match,
-    };
+    },
 };
 
 /**
@@ -307,4 +329,6 @@ static void __exit lcd_driver_exit(void)
 }
 
 module_init(lcd_driver_init);
-module_init(lcd_driver_exit);
+module_exit(lcd_driver_exit);
+
+MODULE_LICENSE("GPL");
