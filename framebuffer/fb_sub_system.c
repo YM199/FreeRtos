@@ -35,6 +35,11 @@ static struct fb_ops lcdfb_ops = {
 	.fb_imageblit	= cfb_imageblit,
 };
 
+/**
+ * @brief 使能
+ * 
+ * @param elcdif 
+ */
 static void imx6ull_elcdif_enable(struct imx6ull_elcdif *elcdif)
 {
 	elcdif->CTRL |= (1<<0);
@@ -45,6 +50,15 @@ static void imx6ull_elcdif_disable(struct imx6ull_elcdif *elcdif)
 	elcdif->CTRL &= ~(1<<0);
 }
 
+/**
+ * @brief 初始化硬件
+ * 
+ * @param elcdif 
+ * @param info 
+ * @param dt 
+ * @param bus_width 
+ * @return int 
+ */
 static int imx6ull_elcdif_init(struct imx6ull_elcdif *elcdif, struct fb_info *info, struct display_timing  *dt, unsigned int bus_width)
 {
 	unsigned int input_data_format;
@@ -152,7 +166,12 @@ static int imx6ull_elcdif_init(struct imx6ull_elcdif *elcdif, struct fb_info *in
 	return 0;
 }
 
-
+/**
+ * @brief device和driver匹配成功调用该函数
+ * 
+ * @param pdev 平台设备 
+ * @return int 
+ */
 static int lcd_driver_probe(struct platform_device *pdev)
 {
 	struct device_node *display_np;
@@ -242,6 +261,12 @@ static int lcd_driver_probe(struct platform_device *pdev)
 	return 0;
 }
 
+/**
+ * @brief 注销fb_info结构体
+ * 
+ * @param pdev 平台设备
+ * @return int 0
+ */
 static int lcd_driver_remove(struct platform_device *pdev)
 {
 	unregister_framebuffer(lcdfb_info);
@@ -253,12 +278,19 @@ static int lcd_driver_remove(struct platform_device *pdev)
 }
 
 
-
+/**
+ * @brief 设备树匹配列表
+ * 
+ */
 static struct of_device_id	lcd_of_match[] = {
 	{.compatible = "fire,lcd_drv",},
 	{},
 };
 
+/**
+ * @brief 平台驱动结构体
+ * 
+ */
 static struct platform_driver lcd_driver = {
 	.probe  = lcd_driver_probe,
 	.remove = lcd_driver_remove,
@@ -268,11 +300,21 @@ static struct platform_driver lcd_driver = {
 	},
 };
 
+/**
+ * @brief 驱动入口函数
+ * 
+ * @return int 成功：0 失败：负数
+ * 
+ */
 static int __init lcd_driver_init(void)
 {
 	return platform_driver_register(&lcd_driver);
 }
 
+/**
+ * @brief 驱动出口函数
+ * 
+ */
 static void __exit lcd_driver_exit(void)
 {
 	platform_driver_unregister(&lcd_driver);
