@@ -9,6 +9,8 @@
 #include <linux/fb.h>
 #include <sys/mman.h>
 
+extern unsigned int test_picture[];
+
 /**
  * @brief 
  * 
