@@ -9,19 +9,19 @@
  /plugin/;
  / {
      fragment@0 {
-         target = <&lcdif>;
+         target = <&lcdif>; /*该部分插入lcdif节点*/
          __overlay__ {
-         	compatible = "fire,lcd_drv";
+         	compatible = "fire,lcd_drv"; /*通过它查找节点*/
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_lcdif_dat &pinctrl_lcdif_ctrl>;
-			display = <&display0>;
-			status = "okay";		
-			display0: display {
+			display = <&display0>; /*在默认情况下将使用display0这个设备节点的配置*/
+			status = "okay"; /*启用设备，默认不写代表使能*/		
+			display0: display {/*子节点，display0是取别名，但在linux中还是显示的是display*/
 			bits-per-pixel = <16>;
 			bus-width = <24>;
-				display-timings {
+				display-timings { /*子节点，这里没取别名是因为其他地方没有调用（猜的）*/
 					native-mode = <&timing1>;
-					timing1: timing1 {
+					timing1: timing1 { /*子节点*/
     			        mode_name = "TFT50AB";
     			        clock-frequency = <27000000>;
     			        hactive = <800>;
@@ -44,7 +44,7 @@
      };
 
      fragment@1 {
-         target = <&iomuxc>;
+         target = <&iomuxc>; /*该部分插入iomuxc节点*/
          __overlay__ { 
 			pinctrl_lcdif_ctrl: lcdifctrlgrp {
     			fsl,pins = <
