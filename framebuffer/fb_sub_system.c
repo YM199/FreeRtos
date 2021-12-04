@@ -210,46 +210,49 @@ static int lcd_driver_probe(struct platform_device *pdev)
 	lcdfb_info = framebuffer_alloc(0, &pdev->dev);/* 分配一个fb_info结构体 */
 
 	/* LCD屏幕参数设置 */
-	lcdfb_info->var.xres   = dt->hactive.typ;
-	lcdfb_info->var.yres   = dt->vactive.typ;
-	lcdfb_info->var.width  = dt->hactive.typ;
-	lcdfb_info->var.height = dt->vactive.typ;
-	lcdfb_info->var.xres_virtual = dt->hactive.typ;
-	lcdfb_info->var.yres_virtual = dt->vactive.typ;
-	lcdfb_info->var.bits_per_pixel = bits_per_pixel;
+	/********可见解析度（实际屏幕）********/
+	lcdfb_info->var.xres   = dt->hactive.typ; /*x轴像素点数量*/
+	lcdfb_info->var.yres   = dt->vactive.typ; /*y轴像素点数量*/
+	/********虚拟解析度（虚拟屏幕）********/
+	lcdfb_info->var.xres_virtual = dt->hactive.typ;/*x轴像素点数量*/
+	lcdfb_info->var.yres_virtual = dt->vactive.typ;/*y轴像素点数量*/
 
-    // /* LCD信号时序设置 */
-	// lcdfb_info->var.pixclock  = dt->pixelclock.typ;
-	// lcdfb_info->var.left_margin	 = dt->hback_porch.typ;
-	// lcdfb_info->var.right_margin = dt->hfront_porch.typ;
-	// lcdfb_info->var.upper_margin = dt->vback_porch.typ;
-	// lcdfb_info->var.lower_margin = dt->vfront_porch.typ;
-	// lcdfb_info->var.vsync_len = dt->vsync_len.typ;
-	// lcdfb_info->var.hsync_len = dt->hsync_len.typ;
+	lcdfb_info->var.width  = dt->hactive.typ; /*宽度*/
+	lcdfb_info->var.height = dt->vactive.typ; /*高度*/
+	lcdfb_info->var.bits_per_pixel = bits_per_pixel;/*像素点位深*/
 
-	// /* LCD RGB格式设置, 这里使用的是RGB565 */		
-	// lcdfb_info->var.red.offset   = 11;
-	// lcdfb_info->var.red.length   = 5;
-	// lcdfb_info->var.green.offset = 5;
-	// lcdfb_info->var.green.length = 6;
-	// lcdfb_info->var.blue.offset  = 0;
-	// lcdfb_info->var.blue.length  = 5;		
+    /* LCD信号时序设置 */
+	lcdfb_info->var.pixclock  = dt->pixelclock.typ; /*像素时钟*/
+	lcdfb_info->var.left_margin	 = dt->hback_porch.typ;
+	lcdfb_info->var.right_margin = dt->hfront_porch.typ;
+	lcdfb_info->var.upper_margin = dt->vback_porch.typ;
+	lcdfb_info->var.lower_margin = dt->vfront_porch.typ;
+	lcdfb_info->var.vsync_len = dt->vsync_len.typ;
+	lcdfb_info->var.hsync_len = dt->hsync_len.typ;
+
+	/* LCD RGB格式设置, 这里使用的是RGB565 */		
+	lcdfb_info->var.red.offset   = 11;
+	lcdfb_info->var.red.length   = 5;
+	lcdfb_info->var.green.offset = 5;
+	lcdfb_info->var.green.length = 6;
+	lcdfb_info->var.blue.offset  = 0;
+	lcdfb_info->var.blue.length  = 5;		
 	
 	
-	// /* 设置固定参数 */
-	// strcpy(lcdfb_info->fix.id, "fire,lcd");
-	// lcdfb_info->fix.type   = FB_TYPE_PACKED_PIXELS;
-	// lcdfb_info->fix.visual = FB_VISUAL_TRUECOLOR;
-	// lcdfb_info->fix.line_length = dt->hactive.typ * bits_per_pixel / 8;                   
-	// lcdfb_info->fix.smem_len	= dt->hactive.typ * dt->vactive.typ * bits_per_pixel / 8;  
+	/* 设置固定参数 */
+	strcpy(lcdfb_info->fix.id, "fire,lcd");
+	lcdfb_info->fix.type   = FB_TYPE_PACKED_PIXELS;
+	lcdfb_info->fix.visual = FB_VISUAL_TRUECOLOR;
+	lcdfb_info->fix.line_length = dt->hactive.typ * bits_per_pixel / 8;                   
+	lcdfb_info->fix.smem_len	= dt->hactive.typ * dt->vactive.typ * bits_per_pixel / 8;  /*存放一帧图片所需要的内存大小（单位：字节）*/
 
-	// /* 其他参数设置 */
-	// lcdfb_info->screen_size = dt->hactive.typ * dt->vactive.typ * bits_per_pixel / 8;
+	/* 其他参数设置 */
+	lcdfb_info->screen_size = dt->hactive.typ * dt->vactive.typ * bits_per_pixel / 8;
 
-	// /* dma_alloc_writecombine：分配smem_len大小的内存，返回screen_base虚拟地址，对应的物理地址保存在smem_start */
-	// lcdfb_info->screen_base = dma_alloc_writecombine(&pdev->dev, lcdfb_info->fix.smem_len, (dma_addr_t*)&lcdfb_info->fix.smem_start, GFP_KERNEL);
-	// lcdfb_info->pseudo_palette = pseudo_palette;
-	// lcdfb_info->fbops = &lcdfb_ops;
+	/* dma_alloc_writecombine：分配smem_len大小的内存，返回screen_base虚拟地址，对应的物理地址保存在smem_start */
+	lcdfb_info->screen_base = dma_alloc_writecombine(&pdev->dev, lcdfb_info->fix.smem_len, (dma_addr_t*)&lcdfb_info->fix.smem_start, GFP_KERNEL);
+	lcdfb_info->pseudo_palette = pseudo_palette;
+	lcdfb_info->fbops = &lcdfb_ops;
 
     // /* elcdif控制器硬件初始化 */	
 	// imx6ull_elcdif_init(elcdif, lcdfb_info, dt, bus_width);
@@ -272,6 +275,7 @@ static int lcd_driver_remove(struct platform_device *pdev)
 {
 	// unregister_framebuffer(lcdfb_info);
 	// imx6ull_elcdif_disable(elcdif);
+	dma_free_writecombine(&pdev->dev, lcdfb_info->fix.smem_len, lcdfb_info->screen_base, (dma_addr_t)&lcdfb_info->fix.smem_start);
 	framebuffer_release(lcdfb_info); /*释放lcdfb_info结构体*/
 
 	printk(KERN_EMERG"module exit!\n");
