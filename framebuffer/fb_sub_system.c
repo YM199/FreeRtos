@@ -181,10 +181,11 @@ static int lcd_driver_probe(struct platform_device *pdev)
 	unsigned int bits_per_pixel; /*像素位深*/
 	unsigned int bus_width; /*总线宽度*/
 
-	// res = platform_get_resource(pdev, IORESOURCE_MEM, 0); /*获取到寄存器的基地址*/
-	// elcdif = devm_ioremap_resource(&pdev->dev, res); /*将基地址转换为虚拟地址*/
-	// printk(KERN_EMERG"res：%x\n",res);
-	// printk(KERN_EMERG"elcdif：%x\n",elcdif);
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0); /*获取到寄存器的基地址*/
+	elcdif = devm_ioremap_resource(&pdev->dev, res); /*将基地址转换为虚拟地址*/
+	printk(KERN_EMERG"res：%x\n",res);
+	printk(KERN_EMERG"elcdif：%x\n",elcdif);
+
 	display_np = of_parse_phandle(pdev->dev.of_node, "display", 0); /*获取display0节点*/
 	timings = of_get_display_timings(display_np); /*解析来自 device_node 的所有 display_timing 条目*/
 	dt = timings->timings[timings->native_mode];
@@ -254,11 +255,11 @@ static int lcd_driver_probe(struct platform_device *pdev)
 	lcdfb_info->pseudo_palette = pseudo_palette;
 	lcdfb_info->fbops = &lcdfb_ops;
 
-    // /* elcdif控制器硬件初始化 */	
-	// imx6ull_elcdif_init(elcdif, lcdfb_info, dt, bus_width);
-	// imx6ull_elcdif_enable(elcdif);
+    /* elcdif控制器硬件初始化 */	
+	imx6ull_elcdif_init(elcdif, lcdfb_info, dt, bus_width);
+	imx6ull_elcdif_enable(elcdif);
 
-	// /* 注册fb_info结构体 */
+	/* 注册fb_info结构体 */
 	// register_framebuffer(lcdfb_info);
 
 	printk(KERN_EMERG"match success!\n");
@@ -273,11 +274,13 @@ static int lcd_driver_probe(struct platform_device *pdev)
  */
 static int lcd_driver_remove(struct platform_device *pdev)
 {
-	// unregister_framebuffer(lcdfb_info);
-	// imx6ull_elcdif_disable(elcdif);
-	dma_free_writecombine(&pdev->dev, lcdfb_info->fix.smem_len, lcdfb_info->screen_base, (dma_addr_t)&lcdfb_info->fix.smem_start);
+	// if (unregister_framebuffer(lcdfb_info))
+	// {
+	// 	printk(KERN_EMERG"Framebuffer is in use!!!!!!!!\n");
+	// }
+	imx6ull_elcdif_disable(elcdif);
 	framebuffer_release(lcdfb_info); /*释放lcdfb_info结构体*/
-
+	dma_free_writecombine(&pdev->dev, lcdfb_info->fix.smem_len, lcdfb_info->screen_base, (dma_addr_t)&lcdfb_info->fix.smem_start);/*这个一定要最后释放，否者会引用到无效的内存空间*/
 	printk(KERN_EMERG"module exit!\n");
 	return 0;
 }
