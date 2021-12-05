@@ -28,6 +28,7 @@ static u32 pseudo_palette[16];
 
 static struct imx6ull_elcdif *elcdif;
 
+/* 对底层硬件设备操作的函数指针 */
 static struct fb_ops lcdfb_ops = {
 	.owner		= THIS_MODULE,
 	.fb_fillrect	= cfb_fillrect,
@@ -45,18 +46,23 @@ static void imx6ull_elcdif_enable(struct imx6ull_elcdif *elcdif)
 	elcdif->CTRL |= (1<<0);
 }
 
+/**
+ * @brief 取消使能
+ * 
+ * @param elcdif 
+ */
 static void imx6ull_elcdif_disable(struct imx6ull_elcdif *elcdif)
 {
 	elcdif->CTRL &= ~(1<<0);
 }
 
 /**
- * @brief 初始化硬件
+ * @brief 初始化寄存器
  * 
- * @param elcdif 
- * @param info 
- * @param dt 
- * @param bus_width 
+ * @param elcdif    寄存器虚拟地址
+ * @param info      fb_info结构体 存放了一些配置文件
+ * @param dt        display_timing结构体 存放了一些配置文件
+ * @param bus_width 总线宽度
  * @return int 
  */
 static int imx6ull_elcdif_init(struct imx6ull_elcdif *elcdif, struct fb_info *info, struct display_timing  *dt, unsigned int bus_width)
@@ -260,7 +266,7 @@ static int lcd_driver_probe(struct platform_device *pdev)
 	imx6ull_elcdif_enable(elcdif);
 
 	/* 注册fb_info结构体 */
-	// register_framebuffer(lcdfb_info);
+	register_framebuffer(lcdfb_info);
 
 	printk(KERN_EMERG"match success!\n");
 	return 0;
@@ -274,10 +280,7 @@ static int lcd_driver_probe(struct platform_device *pdev)
  */
 static int lcd_driver_remove(struct platform_device *pdev)
 {
-	// if (unregister_framebuffer(lcdfb_info))
-	// {
-	// 	printk(KERN_EMERG"Framebuffer is in use!!!!!!!!\n");
-	// }
+	unregister_framebuffer(lcdfb_info);
 	imx6ull_elcdif_disable(elcdif);
 	framebuffer_release(lcdfb_info); /*释放lcdfb_info结构体*/
 	dma_free_writecombine(&pdev->dev, lcdfb_info->fix.smem_len, lcdfb_info->screen_base, (dma_addr_t)&lcdfb_info->fix.smem_start);/*这个一定要最后释放，否者会引用到无效的内存空间*/

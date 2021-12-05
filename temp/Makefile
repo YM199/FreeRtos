@@ -4,7 +4,7 @@ ARCH=arm
 CROSS_COMPILE=arm-linux-gnueabihf-
 export  ARCH  CROSS_COMPILE
 
-obj-m := mxsfb.o 
+obj-m := fb.o 
 
 all:
 	$(MAKE) EXTRA_CFLAGS=-fno-pic -C $(KERNEL_DIR) M=$(CURDIR) modules
