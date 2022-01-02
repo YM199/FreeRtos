@@ -159,3 +159,47 @@ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6ull_alientek_emmc_defconfig
 make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j5
 ```
 
+**LCD 驱动修改**
+
+打开文件 mx6ull_alientek_emmc.c，将原始屏幕参数修改为如下内容：
+
+```c
+struct display_info_t const displays[] = {{
+	.bus = MX6UL_LCDIF1_BASE_ADDR,
+	.addr = 0,
+	.pixfmt = 24,
+	.detect = NULL,
+	.enable = do_enable_parallel_lcd,
+	.mode   = {
+		.name           = "TFT4384",
+		.xres           = 800,
+		.yres           = 480,
+		.pixclock       = 32258,
+		.left_margin    = 88,
+ 		.right_margin   = 40,
+		.upper_margin   = 32,
+		.lower_margin   = 13,
+		.hsync_len      = 48,
+		.vsync_len      = 3,
+		.sync           = 0,
+		.vmode          = FB_VMODE_NONINTERLACED
+} } };
+```
+
+打开 mx6ull_alientek_emmc.h，找到所有如下语句：
+
+```
+panel=TFT43AB
+```
+
+将其改为：
+
+```
+panel=TFT4384
+```
+
+**网络驱动修改**
+
+待修改
+
+**其他需要修改的地方**
