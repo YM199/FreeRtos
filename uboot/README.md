@@ -159,7 +159,7 @@ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6ull_alientek_emmc_defconfig
 make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j5
 ```
 
-**LCD 驱动修改**
+## 5.1、LCD 驱动修改
 
 打开文件 mx6ull_alientek_emmc.c，将原始屏幕参数修改为如下内容：
 
@@ -198,8 +198,175 @@ panel=TFT43AB
 panel=TFT4384
 ```
 
-**网络驱动修改**
 
-待修改
+
+## 5.2、网络驱动修改
+
+**网络 PHY 地址修改**
+
+打开 mx6ull_alientek_emmc.h修改了 334 和 344行
+
+```c
+332 #if (CONFIG_FEC_ENET_DEV == 0)
+333 #define IMX_FEC_BASE            ENET_BASE_ADDR
+334 #define CONFIG_FEC_MXC_PHYADDR          0x0
+335 #define CONFIG_FEC_XCV_TYPE             RMII
+336 #elif (CONFIG_FEC_ENET_DEV == 1)
+337 #define IMX_FEC_BASE            ENET2_BASE_ADDR
+338 #define CONFIG_FEC_MXC_PHYADDR      0x1
+339 #define CONFIG_FEC_XCV_TYPE     RMII
+340 #endif
+341 #define CONFIG_ETHPRIME         "FEC"
+342
+343 #define CONFIG_PHYLIB
+344 #define CONFIG_PHY_SMSC
+345 #endif
+```
+
+**删除 uboot 中 74LV595 的驱动代码**
+
+> mx6ull_alientek_emmc.c
+
+将：
+
+```c
+ 91 #define IOX_SDI IMX_GPIO_NR(5, 10)
+ 92 #define IOX_STCP IMX_GPIO_NR(5, 7)
+ 93 #define IOX_SHCP IMX_GPIO_NR(5, 11)
+ 94 #define IOX_OE IMX_GPIO_NR(5, 8)
+```
+
+修改为：
+
+```c
+#define ENET1_RESET IMX_GPIO_NR(5, 7)
+#define ENET2_RESET IMX_GPIO_NR(5, 8)
+```
+
+------
+
+删除掉如下内容：
+
+```c
+  94 static iomux_v3_cfg_t const iox_pads[] = {
+  95     /* IOX_SDI */
+  96     MX6_PAD_BOOT_MODE0__GPIO5_IO10 | MUX_PAD_CTRL(NO_PAD_CTRL),
+  97     /* IOX_SHCP */
+  98     MX6_PAD_BOOT_MODE1__GPIO5_IO11 | MUX_PAD_CTRL(NO_PAD_CTRL),
+  99     /* IOX_STCP */
+ 100     MX6_PAD_SNVS_TAMPER7__GPIO5_IO07 | MUX_PAD_CTRL(NO_PAD_CTRL),
+ 101     /* IOX_nOE */
+ 102     MX6_PAD_SNVS_TAMPER8__GPIO5_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL),
+ 103 };
+```
+
+删除掉static void iox74lv_init(void)函数和void iox74lv_set(int index)函数
+
+找到 board_init 函数删除掉如下内容：
+
+```c
+imx_iomux_v3_setup_multiple_pads(iox_pads, ARRAY_SIZE(iox_pads));
+iox74lv_init();
+```
+
+**添加 I.MX6U-ALPHA 开发板网络复位引脚驱动**
+
+> mx6ull_alientek_emmc.c
+
+找到数组并在末尾添加如下内容
+
+```c
+static iomux_v3_cfg_t const fec1_pads[] = {
+	......
+	MX6_PAD_SNVS_TAMPER7__GPIO5_IO07 | MUX_PAD_CTRL(NO_PAD_CTRL),
+};
+
+static iomux_v3_cfg_t const fec2_pads[] = {
+	......
+	MX6_PAD_SNVS_TAMPER8__GPIO5_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL),
+};
+```
+
+找到函数 setup_iomux_fec修改为如下内容：
+
+```c
+static void setup_iomux_fec(int fec_id)
+{
+	if (fec_id == 0)
+	{
+		imx_iomux_v3_setup_multiple_pads(fec1_pads,ARRAY_SIZE(fec1_pads));
+
+		gpio_direction_output(ENET1_RESET, 1);
+		gpio_set_value(ENET1_RESET, 0);
+		mdelay(20);
+		gpio_set_value(ENET1_RESET, 1);
+	}
+	else
+	{
+		imx_iomux_v3_setup_multiple_pads(fec2_pads,ARRAY_SIZE(fec2_pads));
+        
+		gpio_direction_output(ENET2_RESET, 1);
+		gpio_set_value(ENET2_RESET, 0);
+		mdelay(20);
+		gpio_set_value(ENET2_RESET, 1);
+	}
+}
+```
+
+**修改 drivers/net/phy/phy.c 文件中的函数 genphy_update_link**
+
+```c
+int genphy_update_link(struct phy_device *phydev)
+{
+    unsigned int mii_reg;
+	
+    #ifdef CONFIG_PHY_SMSC
+	static int lan8720_flag = 0;
+	int bmcr_reg = 0;
+	if (lan8720_flag == 0) {
+		bmcr_reg = phy_read(phydev, MDIO_DEVAD_NONE, MII_BMCR); 
+		phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR, BMCR_RESET); 
+		while(phy_read(phydev, MDIO_DEVAD_NONE, MII_BMCR) & 0X8000) {
+		udelay(100); 
+	}
+		phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR, bmcr_reg); 
+		lan8720_flag = 1;
+	}
+	#endif
+	......
+	return 0
+}
+```
+
+
+
+------
 
 **其他需要修改的地方**
+
+> mx6ull_alientek_emmc.c
+
+找到函数checkboard，将其改为如下所示内容：
+
+```c
+int checkboard(void) {
+	if (is_mx6ull_9x9_evk())
+		puts("Board: MX6ULL 9x9 EVK\n");
+	else
+ 		puts("Board: MX6ULL ALIENTEK EMMC\n");
+ 	return 0; 
+}
+```
+
+在 uboot 中使用网络之前要先设置几个环境变量
+
+```
+setenv ipaddr 192.168.101.50     //开发板 IP 地址
+setenv ethaddr b8:ae:1d:01:00:00 //开发板网卡 MAC 地址
+setenv gatewayip 192.168.101.1   //开发板默认网关
+setenv netmask 255.255.255.0     //开发板子网掩码
+setenv serverip 192.168.101.6    //服务器地址，也就是 Ubuntu 地址
+saveenv //保存环境变量
+```
+
+./imxdownload u-boot.bin /dev/sdb
