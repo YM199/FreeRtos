@@ -369,4 +369,23 @@ setenv serverip 192.168.101.6    //服务器地址，也就是 Ubuntu 地址
 saveenv //保存环境变量
 ```
 
-./imxdownload u-boot.bin /dev/sdb
+# 六、启动Linux系统
+
+**从 EMMC 启动 Linux 系统**
+
+先检查一下 EMMC 的分区 1 中有没有zImage 文件和设备树文件，输入命令“ls mmc 1:1”
+
+```
+setenv bootargs 'console=ttymxc0,115200 root=/dev/mmcblk1p2 rootwait rw'
+setenv bootcmd 'mmc dev 1; fatload mmc 1:1 80800000 zImage; fatload mmc 1:1 83000000 imx6ull-alientek-emmc.dtb; bootz 80800000 - 83000000;
+saveenv
+```
+
+**从网络启动 Linux 系统**
+
+```
+setenv bootargs 'console=ttymxc0,115200 root=/dev/mmcblk1p2 rootwait rw'
+setenv bootcmd 'tftp 80800000 zImage; tftp 83000000 imx6ull-alientek-emmc.dtb; bootz 80800000 - 83000000'
+saveenv
+```
+
