@@ -234,9 +234,12 @@ nameserver 192.168.101.1
 
 
 
+**注意事项：**
 
+在打包根文件系统时，执行如下命令
 
 ```
-setenv bootargs 'console=ttymxc0,115200 root=/dev/nfs nfsroot=192.168.101.7:/home/yangmou/linux/nfs/rootfs,proto=tcp rw ip=192.168.101.8:192.168.101.7:192.168.101.1:255.255.255.0::eth0:off'
+cd rootfs/
+tar -vcjf rootfs.tar.bz2 *
 ```
 
