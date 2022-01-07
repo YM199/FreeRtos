@@ -9,12 +9,13 @@ kernel_modules:
 	$(MAKE) -C $(KERNELDIR) M=$(CURRENT_PATH) modules
 
 app:
-	arm-linux-gnueabihf-gcc chrdevbaseApp.c -o chrdevbaseApp
+	arm-linux-gnueabihf-gcc chrdevbaseApp.c -o App
 
 copy:
 	sudo cp chrdevbaseApp chrdevbase.ko /var/www/html
 
 clean:
 	$(MAKE) -C $(KERNELDIR) M=$(CURRENT_PATH) clean
+	-rm App
 
 
