@@ -7,16 +7,8 @@
  * 创建人：Yang Mou，2022 年  1 月 6 日
  * 
  * *********************************/
-#include <linux/types.h>
-#include <linux/kernel.h>
-#include <linux/delay.h>
-#include <linux/ide.h>
-#include <linux/init.h>
-#include <linux/module.h>
 
-
-#define CHRDEVBASE_MAJOR 200
-#define CHRDEVBASE_NAME  "chrdevbase"
+#include "chrdev.h"
 
 
 static char readbuf[1100];                      /*读缓冲区*/
@@ -118,6 +110,16 @@ static struct file_operations chrdevbase_fops = {
     .release = chrdevbase_release,
 };
 
+
+/*================================================================ 
+ * 函数名：chrdevbase_init
+ * 功能描述：加载字符设备
+ * 参数：
+ *      void
+ * 返回值：
+ *      0
+ * 作者：Yang Mou 2022/1/8
+================================================================*/
 static int __init chrdevbase_init( void )
 {
     int retvalue = 0;
@@ -133,6 +135,15 @@ static int __init chrdevbase_init( void )
 }
 
 
+/*================================================================ 
+ * 函数名：chrdevbase_exit
+ * 功能描述：卸载字符设备
+ * 参数：
+ *      void
+ * 返回值：
+ *      无
+ * 作者：Yang Mou 2022/1/8
+================================================================*/
 static void __exit chrdevbase_exit( void )
 {
     unregister_chrdev( CHRDEVBASE_MAJOR, CHRDEVBASE_NAME );
