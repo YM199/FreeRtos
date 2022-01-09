@@ -8,6 +8,14 @@
 #include <linux/init.h>
 #include <linux/module.h>
 
+#define DEBUG
+
+#ifdef DEBUG 
+    #define debug(...) printk(__VA_ARGS__)
+#else 
+    #define debug(...)
+#endif
+
 
 #define CHRDEVBASE_MAJOR 200
 #define CHRDEVBASE_NAME  "chrdevbase"

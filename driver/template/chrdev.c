@@ -11,10 +11,9 @@
 #include "chrdev.h"
 
 
-static char readbuf[1100];                      /*读缓冲区*/
+static char readbuf[100];                      /*读缓冲区*/
 static char writebuf[100];                      /*写缓冲区*/
 static char kerneldata[100] = {"kernel data"};  /*读写的数据*/ 
-
 
 /*================================================================ 
  * 函数名：chrdevbase_open
@@ -35,7 +34,7 @@ static int chrdevbase_open( struct inode *inode, struct file *filp )
 
 /*================================================================ 
  * 函数名：chrdevbase_read
- * 功能描述：从字符设备中读取数据
+ * 功能描述：从内核空间拷贝数据到用户空间
  * 参数：
  *      filp [IN]：要打开的设备文件
  *      buf  [OUT]：返回给用户空间的数据缓冲区
@@ -43,7 +42,7 @@ static int chrdevbase_open( struct inode *inode, struct file *filp )
  *      offt [IN]：相对于文件首地址的偏移
  * 返回值：
  *      成功：读取的字节数 
- *      失败：负数
+ *      失败：-1
  * 作者：Yang Mou 2022/1/6
 ================================================================*/
 static ssize_t chrdevbase_read( 
@@ -55,23 +54,32 @@ static ssize_t chrdevbase_read(
 {
     int retvalue = 0;
 
-    /*向用户空间发送数据*/
+    
     memcpy( readbuf, kerneldata, sizeof( kerneldata ) );
-    retvalue = copy_to_user( buf, readbuf, cnt );
-    if( 0 == retvalue )
+    retvalue = copy_to_user( buf, readbuf, cnt );/*向用户空间发送数据*/
+    if(retvalue != 0)
     {
-        printk( "kernel send data ok!\r\n" );
-    }
-    else
-    {
-        printk( "kernel send data failed!\r\n" );
+        debug( "kernel send data error!\r\n" );
+        return -1;
     }
 
-    return retvalue;
+    return cnt;
 }
 
 
-
+/*================================================================ 
+ * 函数名：chrdevbase_read
+ * 功能描述：从用户空间拷贝数据到内核空间
+ * 参数：
+ *      filp [IN]：要打开的设备文件
+ *      buf  [OUT]：返回给内核空间的数据缓冲区
+ *      cnt  [IN]：要读取的数据长度
+ *      offt [IN]：相对于文件首地址的偏移
+ * 返回值：
+ *      成功：读取的字节数 
+ *      失败：-1
+ * 作者：Yang Mou 2022/1/9
+================================================================*/
 static ssize_t chrdevbase_write(  
                                  struct file *filp,
                                  const char __user *buf,
@@ -81,16 +89,16 @@ static ssize_t chrdevbase_write(
 {
     int retvalue = 0;
     retvalue = copy_from_user( writebuf, buf, cnt );
-    if( 0 == retvalue )
+    if( retvalue != 0 )
     {
-        printk("kernel recevdata: %s\r\n", writebuf);
-    }
-    else
-    {
-        printk("kernel recevdata failed!\r\n");
+        debug( "FILE: %s, LINE: %d: kernel recevdata failed!\r\n", __FILE__, __LINE__ );
+        return -1;
     }
 
-    return 0;
+    debug( "kernel recevdata: %s\r\n", writebuf );
+
+
+    return cnt;
 }
 
 static int chrdevbase_release( 
@@ -128,9 +136,9 @@ static int __init chrdevbase_init( void )
 
     if( retvalue < 0 )
     {
-        printk("chrdevbase driver register failed\r\n");
+        debug( "FILE: %s, LINE: %d: chrdevbase driver register failed!\r\n", __FILE__, __LINE__ );
     }
-    printk("chrdevbase_init()\r\n");
+    debug( "chrdevbase_init!\r\n" );
     return 0;
 }
 
@@ -147,7 +155,7 @@ static int __init chrdevbase_init( void )
 static void __exit chrdevbase_exit( void )
 {
     unregister_chrdev( CHRDEVBASE_MAJOR, CHRDEVBASE_NAME );
-    printk("chrdevbase_exit()\r\n");
+    debug( "chrdevbase_exit!\r\n" );
 }
 
 module_init( chrdevbase_init );

@@ -9,4 +9,13 @@
 #include "stdlib.h"
 #include "string.h"
 
+#define DEBUG
+
+#ifdef DEBUG 
+    #define debug(...) printf(__VA_ARGS__)
+#else 
+    #define debug(...)
+#endif
+
+
 #endif

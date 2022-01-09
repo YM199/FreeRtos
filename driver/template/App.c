@@ -10,7 +10,8 @@ int main( int argc, char *argv[] )
 
     if( argc != 3 )
     {
-        printf("Error Usage!\r\n");
+        debug ("FILE: %s, LINE: %d", __FILE__, __LINE__);
+        debug("Error Usage!\r\n");
         return -1;
     }
 
@@ -19,7 +20,8 @@ int main( int argc, char *argv[] )
     fd = open( filename, O_RDWR );
     if( fd < 0 )
     {
-        printf("Can't open file %s\r\n", filename);
+        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
+        debug( "Can't open file %s\r\n", filename );
         return -1;
     }
 
@@ -28,11 +30,12 @@ int main( int argc, char *argv[] )
         retvalue = read( fd, readbuf, 50 );
         if( retvalue < 0 )
         {
-            printf( "read file %s failed!\r\n", filename );
+            debug ("FILE: %s, LINE: %d", __FILE__, __LINE__);
+            debug( "read file %s failed!\r\n", filename );
         }
         else
         {
-            printf( "read data: %s\r\n", readbuf );
+            debug( "read data: %s\r\n", readbuf );
         }
     }
     if( 2 == atoi( argv[2] ) )
@@ -41,14 +44,16 @@ int main( int argc, char *argv[] )
         retvalue = write( fd, writebuf, 50 );
         if( retvalue < 0 )
         {
-            printf( "write file %s failed!\r\n", filename );
+            debug ("FILE: %s, LINE: %d", __FILE__, __LINE__);
+            debug( "write file %s failed!\r\n", filename );
         }
     } 
 
     retvalue == close(fd);
     if(retvalue < 0)
     {
-        printf( "close %s error\r\n", filename );
+        debug ("FILE: %s, LINE: %d", __FILE__, __LINE__);
+        debug( "close %s error\r\n", filename );
     }
 
     return 0;
