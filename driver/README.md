@@ -12,3 +12,16 @@ ioremap(cookie,size);
 void iounmap (volatile void __iomem *addr);
 ```
 
+
+
+
+
+
+
+输入“lsmod”命令即可查看当前系统中存在的模块
+
+查看当前系统中所有的设备
+
+```
+cat /proc/devices
+```
