@@ -14,7 +14,7 @@ app: app.h
 
 .PHONY: clean copy
 copy:
-	sudo cp App $(FILE_NAME).ko /var/www/html
+	sudo cp app $(DEVICE_NAME).ko /var/www/html
 clean:
 	$(MAKE) -C $(KERNELDIR) M=$(CURRENT_PATH) clean
 	rm app
