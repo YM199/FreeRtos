@@ -1,20 +1,62 @@
-字符设备的注册和注销函数
+> 字符设备的注册和注销函数
+>
+> ```c
+> static inline int register_chrdev( unsigned int major, const char *name,const struct file_operations *fops );
+> static inline void unregister_chrdev(unsigned int major, const char *name);
+> ```
+>
+> 地址映射
+>
+> ```
+> ioremap(cookie,size);
+> void iounmap (volatile void __iomem *addr);
+> ```
+>
 
-```c
-static inline int register_chrdev( unsigned int major, const char *name,const struct file_operations *fops );
-static inline void unregister_chrdev(unsigned int major, const char *name);
+
+
+申请设备号：
+
+```
+申请
+int alloc_chrdev_region(dev_t *dev, unsigned baseminor, unsigned count, const char *name)
+int register_chrdev_region(dev_t from, unsigned count, const char *name)
+注销
+void unregister_chrdev_region(dev_t from, unsigned count)
 ```
 
-地址映射
+
+
+添加字符设备：
 
 ```
-ioremap(cookie,size);
-void iounmap (volatile void __iomem *addr);
+添加
+int cdev_add(struct cdev *p, dev_t dev, unsigned count)
+删除
+void cdev_del(struct cdev *p)
 ```
 
 
 
+**自动创建设备节点**
 
+创建和删除类
+
+```
+创建
+struct class *class_create (struct module *owner, const char *name)
+删除
+void class_destroy(struct class *cls);
+```
+
+创建设备
+
+```
+创建
+struct device *device_create(struct class *class,...)
+卸载
+void device_destroy(struct class *class, dev_t devt)
+```
 
 
 
