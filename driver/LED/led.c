@@ -17,6 +17,9 @@ static void __iomem *SW_PAD_GPIO1_IO03;
 static void __iomem *GPIO1_DR;
 static void __iomem *GPIO1_GDIR;
 
+struct chrdev chrled;
+
+
 void led_switch( const u8 sta )
 {
     u32 val = 0;
@@ -36,6 +39,7 @@ void led_switch( const u8 sta )
 
 static int led_open( struct inode *inode, struct file *filp )
 {
+    filp->private_data = &chrled; /*设置私有数据*/
     return 0;
 }
 
@@ -111,7 +115,6 @@ static struct file_operations led_fops =
 ================================================================*/
 static int __init led_init( void )
 {
-    int retvalue = 0;
     u32 val = 0;
 
     /*地址映射*/
@@ -144,13 +147,39 @@ static int __init led_init( void )
     val |= (1 << 3);
     writel(val, GPIO1_DR);
 
-    retvalue = register_chrdev( LED_MAJOR, LED_NAME, &led_fops );
-    if( retvalue < 0 )
+
+    /*申请设备号*/
+    if( chrled.major )
     {
-        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
-        debug( "register_chrdev fail!\r\n" );
-        return -1;
+        chrled.devid = MKDEV( chrled.major, 0 );
+        register_chrdev_region( chrled.devid, LED_CNT, LED_NAME);
     }
+    else
+    {
+        alloc_chrdev_region( &chrled.devid, 0, LED_CNT, LED_NAME );
+        chrled.major = MAJOR( chrled.devid );
+        chrled.minor = MINOR( chrled.devid );
+    }
+
+    /*初始化cdev*/
+    chrled.cdev.owner = THIS_MODULE;
+    cdev_init( &chrled.cdev, &led_fops );
+    cdev_add( &chrled.cdev, chrled.devid, LED_CNT );
+
+    /*创建类*/
+    chrled.class = class_create( THIS_MODULE, LED_NAME );
+    if( IS_ERR( chrled.class ) )
+    {
+        return PTR_ERR( chrled.class );
+    }
+
+    /*创建设备*/
+    chrled.device = device_create( chrled.class, NULL, chrled.devid, NULL, LED_NAME );
+    if( IS_ERR( chrled.device ) )
+    {
+        return PTR_ERR( chrled.device );
+    }
+
     debug( "led init\r\n" );
     return 0;
 }
@@ -173,7 +202,13 @@ static void __exit led_exit( void )
     iounmap( GPIO1_DR );
     iounmap( GPIO1_GDIR );
 
-    unregister_chrdev( LED_MAJOR, LED_NAME );
+    //*unregister_chrdev( LED_MAJOR, LED_NAME );*/
+    cdev_del( &chrled.cdev );
+    unregister_chrdev_region( chrled.devid, LED_CNT );
+
+    device_destroy( chrled.class, chrled.devid );
+    class_destroy( chrled.class );
+
     debug("led exit!\r\n");
 
     return;

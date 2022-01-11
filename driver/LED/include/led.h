@@ -9,6 +9,8 @@
 #include <linux/module.h>
 #include <linux/errno.h>
 #include <linux/gpio.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
 #include <asm/mach/map.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
@@ -21,12 +23,25 @@
     #define debug(...)
 #endif
 
-
-#define LED_MAJOR 200   /*主设备号*/
+#define LED_CNT   1
 #define LED_NAME  "led" /*设备名*/
+
+
 
 #define LED_ON  1  /*开灯*/
 #define LED_OFF 0  /*关灯*/
+
+
+struct chrdev
+{
+    dev_t devid;        /*设备号*/
+    struct cdev cdev;   
+    struct class *class;
+    struct device *device;
+    int major;              /*主设备号*/
+    int minor;              /*次设备号*/
+};
+
 
 
 #define CCM_CCGR1_BASE          (0X020C406C)
