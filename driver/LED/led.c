@@ -116,13 +116,33 @@ static struct file_operations led_fops =
 static int __init led_init( void )
 {
     u32 val = 0;
+    int ret;
+    u32 regdata[14];
+  
+
+
+    /*获取设备节点*/
+    chrled.nd = of_find_node_by_path( "/alphaled" );
+    if( NULL == chrled.nd )
+    {
+        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
+        debug( "alphaled node can not found!\r\n" );
+        return -1;
+    }
+
+    ret = of_property_read_u32_array( chrled.nd, "reg", regdata, 10 );
+    if( ret < 0 )
+    {
+        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
+        debug( "reg property read failed!\r\n" );
+    }
 
     /*地址映射*/
-    IMX6U_CCM_CCGR1 = ioremap( CCM_CCGR1_BASE, 4 );
-    SW_MUX_GPIO1_IO03 = ioremap( SW_MUX_GPIO1_IO03_BASE, 4 );
-    SW_PAD_GPIO1_IO03 = ioremap( SW_PAD_GPIO1_IO03_BASE, 4 );
-    GPIO1_DR = ioremap( GPIO1_DR_BASE, 4 );
-    GPIO1_GDIR = ioremap( GPIO1_GDIR_BASE, 4 );
+    IMX6U_CCM_CCGR1 = of_iomap( chrled.nd, 0 );
+    SW_MUX_GPIO1_IO03 = of_iomap( chrled.nd, 1 );
+    SW_PAD_GPIO1_IO03 = of_iomap( chrled.nd, 2 );
+    GPIO1_DR = of_iomap( chrled.nd, 3 );
+    GPIO1_GDIR = of_iomap( chrled.nd, 4 );
 
     /* 使能 GPIO1 时钟 */
     val = readl( IMX6U_CCM_CCGR1 );

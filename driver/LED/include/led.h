@@ -11,6 +11,8 @@
 #include <linux/gpio.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
 #include <asm/mach/map.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
@@ -34,12 +36,13 @@
 
 struct chrdev
 {
-    dev_t devid;        /*设备号*/
+    dev_t devid;            /*设备号*/
     struct cdev cdev;   
     struct class *class;
     struct device *device;
     int major;              /*主设备号*/
     int minor;              /*次设备号*/
+    struct device_node *nd; /*设备节点*/
 };
 
 
