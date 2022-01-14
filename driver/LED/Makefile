@@ -14,7 +14,7 @@ app: app.h
 
 .PHONY: clean copy
 copy:
-	sudo cp app $(DEVICE_NAME).ko /var/www/html
+	cp app $(DEVICE_NAME).ko /home/yangmou/linux/nfs/rootfs/yangmou/
 clean:
 	$(MAKE) -C $(KERNELDIR) M=$(CURRENT_PATH) clean
 	rm app
