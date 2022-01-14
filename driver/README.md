@@ -1,20 +1,3 @@
-> 字符设备的注册和注销函数
->
-> ```c
-> static inline int register_chrdev( unsigned int major, const char *name,const struct file_operations *fops );
-> static inline void unregister_chrdev(unsigned int major, const char *name);
-> ```
->
-> 地址映射
->
-> ```
-> ioremap(cookie,size);
-> void iounmap (volatile void __iomem *addr);
-> ```
->
-
-
-
 申请设备号：
 
 ```
@@ -67,3 +50,11 @@ void device_destroy(struct class *class, dev_t devt)
 ```
 cat /proc/devices
 ```
+
+
+
+
+
+**设备树**
+
+到/proc/device-tree/查看对应的设备树节点
