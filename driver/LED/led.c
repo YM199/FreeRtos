@@ -71,6 +71,8 @@ static ssize_t led_write( struct file *filp, const char __user *buf, size_t cnt,
     int retvalue;
     unsigned char databuf[1];
     unsigned char ledstat;
+    struct chrdev *dev = filp->private_data;
+
 
     retvalue = copy_from_user( databuf, buf, cnt );
     if( retvalue < 0 )
@@ -83,11 +85,11 @@ static ssize_t led_write( struct file *filp, const char __user *buf, size_t cnt,
     ledstat = databuf[0];
     if( ledstat == LED_ON )
     {
-        led_switch( LED_ON );
+        gpio_set_value( dev->led_gpio, 0 );
     }
     else if(ledstat == LED_OFF)
     {
-        led_switch( LED_OFF );
+        gpio_set_value( dev->led_gpio, 1 );
     }
     
     return 0;
@@ -115,14 +117,12 @@ static struct file_operations led_fops =
 ================================================================*/
 static int __init led_init( void )
 {
-    u32 val = 0;
     int ret;
-    u32 regdata[14];
   
 
 
     /*获取设备节点*/
-    chrled.nd = of_find_node_by_path( "/alphaled" );
+    chrled.nd = of_find_node_by_path( "/led" );
     if( NULL == chrled.nd )
     {
         debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
@@ -130,43 +130,23 @@ static int __init led_init( void )
         return -1;
     }
 
-    ret = of_property_read_u32_array( chrled.nd, "reg", regdata, 10 );
+    /*获取设备树中的 gpio 属性，得到 LED 所使用的 LED 编号*/
+    chrled.led_gpio = of_get_named_gpio( chrled.nd, "led-gpio", 0 );
+    if( chrled.led_gpio < 0 )
+    {
+        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
+        debug( "can't get led-gpio!\r\n" );
+        return -1;
+    }
+
+    /* 设置 GPIO1_IO03 为输出，并且输出高电平，默认关闭 LED 灯 */
+    ret = gpio_direction_output( chrled.led_gpio, 1 );
     if( ret < 0 )
     {
         debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
-        debug( "reg property read failed!\r\n" );
+        debug( "can't set gpio!\r\n" );
+        return -1;        
     }
-
-    /*地址映射*/
-    IMX6U_CCM_CCGR1 = of_iomap( chrled.nd, 0 );
-    SW_MUX_GPIO1_IO03 = of_iomap( chrled.nd, 1 );
-    SW_PAD_GPIO1_IO03 = of_iomap( chrled.nd, 2 );
-    GPIO1_DR = of_iomap( chrled.nd, 3 );
-    GPIO1_GDIR = of_iomap( chrled.nd, 4 );
-
-    /* 使能 GPIO1 时钟 */
-    val = readl( IMX6U_CCM_CCGR1 );
-    val &= ~(3 << 26); /* 清除以前的设置 */
-    val |= (3 << 26); /* 设置新值 */
-    writel(val, IMX6U_CCM_CCGR1);
-
-    /* 复用为GPIO1_IO03 */
-    writel(5, SW_MUX_GPIO1_IO03);
-
-    /* 设置 IO 属性 */
-    writel(0x10B0, SW_PAD_GPIO1_IO03);
-
-    /* 设置 GPIO1_IO03 为输出功能 */
-    val = readl(GPIO1_GDIR);
-    val &= ~(1 << 3); /* 清除以前的设置 */
-    val |= (1 << 3); /* 设置为输出 */
-    writel(val, GPIO1_GDIR);
-
-    /* 默认关闭 LED */
-    val = readl(GPIO1_DR);
-    val |= (1 << 3);
-    writel(val, GPIO1_DR);
-
 
     /*申请设备号*/
     if( chrled.major )

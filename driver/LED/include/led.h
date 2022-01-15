@@ -13,6 +13,7 @@
 #include <linux/device.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/of_gpio.h>
 #include <asm/mach/map.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
@@ -43,14 +44,7 @@ struct chrdev
     int major;              /*主设备号*/
     int minor;              /*次设备号*/
     struct device_node *nd; /*设备节点*/
+    int led_gpio;           /*led使用的GPIO编号*/
 };
-
-
-
-#define CCM_CCGR1_BASE          (0X020C406C)
-#define SW_MUX_GPIO1_IO03_BASE  (0X020E0068)
-#define SW_PAD_GPIO1_IO03_BASE  (0X020E02F4)
-#define GPIO1_DR_BASE           (0X0209C000)
-#define GPIO1_GDIR_BASE         (0X0209C004)
 
 #endif
