@@ -45,6 +45,7 @@ struct chrdev
     int minor;              /*次设备号*/
     struct device_node *nd; /*设备节点*/
     int led_gpio;           /*led使用的GPIO编号*/
+    atomic_t lock;          /*原子变量*/
 };
 
 #endif

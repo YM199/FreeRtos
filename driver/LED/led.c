@@ -20,31 +20,49 @@ static void __iomem *GPIO1_GDIR;
 struct chrdev chrled;
 
 
-void led_switch( const u8 sta )
-{
-    u32 val = 0;
-    if( sta == LED_ON )
-    {
-        val = readl(GPIO1_DR);
-        val &= ~(1 << 3);
-        writel(val, GPIO1_DR);
-    }
-    else if( sta == LED_OFF )
-    {
-        val = readl(GPIO1_DR);
-        val|= (1 << 3);
-        writel(val, GPIO1_DR);
-    }
-}
 
+/*================================================================ 
+ * 函数名：led_open
+ * 功能描述：应用层调用open打开设备时就会调用该函数
+ * 参数：
+ *      inode[IN]: 设备节点
+ *      filp [IN]: 要打开的设备文件
+ * 返回值：
+ *      成功: 0
+ *      失败: -1
+ * 作者：Yang Mou 2022/1/18
+================================================================*/
 static int led_open( struct inode *inode, struct file *filp )
 {
+    /* 通过判断原子变量的值来检查 LED 有没有被别的应用使用 */
+    if( !atomic_dec_and_test( &chrled.lock ) );
+    {
+        atomic_inc( &chrled.lock );
+        debug ("FILE: %s, LINE: %d", __FILE__, __LINE__);
+        debug("device is busy!\r\n");
+        return -1;
+    }
+
     filp->private_data = &chrled; /*设置私有数据*/
     return 0;
 }
 
+/*================================================================ 
+ * 函数名：led_release
+ * 功能描述：应用层调用close关闭设备时就会调用该函数
+ * 参数：
+ *      inode[IN]: 设备节点
+ *      filp [IN]: 要关闭的设备文件
+ * 返回值：
+ *      成功: 0
+ *      失败: -1
+ * 作者：Yang Mou 2022/1/18
+================================================================*/
 static int led_release( struct inode *inode, struct file *filp )
 {
+    struct chrdev *dev = filp->private_data;
+    /* 关闭驱动文件的时候释放原子变量 */
+    atomic_inc(&dev->lock);
     return 0;
 }
 
@@ -119,7 +137,8 @@ static int __init led_init( void )
 {
     int ret;
   
-
+    /* 初始化原子变量 */
+    atomic_set( &chrled.lock, 1 );/* 原子变量初始值为 1 */
 
     /*获取设备节点*/
     chrled.nd = of_find_node_by_path( "/led" );
