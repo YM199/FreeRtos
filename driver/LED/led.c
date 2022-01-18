@@ -35,7 +35,7 @@ struct chrdev chrled;
 static int led_open( struct inode *inode, struct file *filp )
 {
     /* 通过判断原子变量的值来检查 LED 有没有被别的应用使用 */
-    if( !atomic_dec_and_test( &chrled.lock ) );
+    if( !atomic_dec_and_test( &chrled.lock ) )
     {
         atomic_inc( &chrled.lock );
         debug ("FILE: %s, LINE: %d", __FILE__, __LINE__);
