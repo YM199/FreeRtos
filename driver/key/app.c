@@ -14,29 +14,36 @@ int main( int argc, char *argv[] )
 {
     int fd, retvalue;
     char *filename;
-    unsigned char databuf[1];
+    unsigned char keyvalue;
 
-    if( argc != 3 )
+    if( argc != 2 )
     {
-         debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
+         debug( "FILE: %s, LINE: %d:\r\n", __FILE__, __LINE__ );
          debug( "Error Usage!\r\n" );
+         return -1;
     }
 
     filename = argv[1];
 
-    /*打开led驱动*/
+    /*打开key驱动*/
     fd = open(filename, O_RDWR);
     if( fd < 0 )
     {
-        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
+        debug( "FILE: %s, LINE: %d:\r\n", __FILE__, __LINE__ );
         debug( "file %s open failed!\r\n", argv[1] );       
         return -1;
     }
     
-    databuf[0] = atoi( argv[2] );/* 要执行的操作：打开或关闭 */    
+    while( 1 )
+    {
+        read( fd, &keyvalue, sizeof( keyvalue ) );
+        if( keyvalue == KEY0VALUE )
+        {
+            debug("KEY0 Press, value = %#X\r\n", keyvalue);/* 按下 */
+        }
+    }
 
-    /* 向/dev/led 文件写入数据 */
-    retvalue = write( fd, databuf, sizeof( databuf ) );
+
 
     retvalue = close(fd);
     if( retvalue < 0 )

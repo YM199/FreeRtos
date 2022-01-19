@@ -10,8 +10,8 @@
 #include "stdlib.h"
 #include "string.h"
 
-#define LED_ON  1
-#define LED_OFF 0
+#define KEY0VALUE  0XF0
+#define INVAKEY    0X00
 
 
 #define DEBUG
