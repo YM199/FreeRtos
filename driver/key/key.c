@@ -189,7 +189,7 @@ static int __init mykey_init( void )
         return PTR_ERR( chrkey.device );
     }
 
-    debug( "led init\r\n" );
+    debug( "key init\r\n" );
     return 0;
 }
 
