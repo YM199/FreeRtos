@@ -1,30 +1,68 @@
-
 /************************************
  *
- * 文件名：led.c
+ * 文件名：key.c
  *
- * 文件描述：led驱动
+ * 文件描述：key驱动
  * 
- * 创建人：Yang Mou，2022 年  1 月 9 日
+ * 创建人：Yang Mou，2022 年  1 月 19 日
  * 
  * *********************************/
 
 #include "include/key.h"
 
 
-static void __iomem *IMX6U_CCM_CCGR1;
-static void __iomem *SW_MUX_GPIO1_IO03;
-static void __iomem *SW_PAD_GPIO1_IO03;
-static void __iomem *GPIO1_DR;
-static void __iomem *GPIO1_GDIR;
+struct keydev chrkey;
 
-struct chrdev chrled;
+static int key_open( struct inode *inode, struct file *filp );
+static int key_release( struct inode *inode, struct file *filp );
+static ssize_t key_read( struct file *filp, char __user *buf, size_t cnt, loff_t *offt );
 
-
+static struct file_operations key_fops =
+{
+    .owner = THIS_MODULE,
+    .open = key_open,
+    .release = key_release,
+    .read = key_read,
+};
 
 /*================================================================ 
- * 函数名：led_open
- * 功能描述：应用层调用open打开设备时就会调用该函数
+ * 函数名：key_gpio_init
+ * 功能描述：初始化GPIO
+ * 参数：
+ *      void
+ * 返回值：
+ *      成功: 0
+ *      失败: -1
+ * 作者：Yang Mou 2022/1/19
+================================================================*/
+static int key_gpio_init(void)
+{
+    chrkey.nd = of_find_node_by_path( "/key" ); /* 获取/dev/key */
+    if( NULL == chrkey.nd )
+    {
+        debug( "FILE: %s, LINE: %d:\r\n", __FILE__, __LINE__ );
+        debug( "can not found /key!\r\n" );
+        return -1;        
+    }
+
+    chrkey.key_gpio = of_get_named_gpio( chrkey.nd, "key-gpio", 0 ); /* 获取GPIO编号 */
+    if( chrkey.key_gpio < 0 )
+    {
+        debug( "FILE: %s, LINE: %d:\r\n", __FILE__, __LINE__ );
+        debug( "can't get key-gpio!\r\n" );
+        return -1;        
+    }
+
+    gpio_request( chrkey.key_gpio, "key0" ); /*申请一个 GPIO 管脚*/
+    gpio_direction_input( chrkey.key_gpio );  
+
+    return 0;
+}
+
+
+/*================================================================
+ * 函数名：key_open
+ * 功能描述：打开设备文件
  * 参数：
  *      inode[IN]: 设备节点
  *      filp [IN]: 要打开的设备文件
@@ -33,99 +71,78 @@ struct chrdev chrled;
  *      失败: -1
  * 作者：Yang Mou 2022/1/18
 ================================================================*/
-static int led_open( struct inode *inode, struct file *filp )
+static int key_open( struct inode *inode, struct file *filp )
 {
-    /* 通过判断原子变量的值来检查 LED 有没有被别的应用使用 */
-    if( !atomic_dec_and_test( &chrled.lock ) )
-    {
-        atomic_inc( &chrled.lock );
-        debug ("FILE: %s, LINE: %d", __FILE__, __LINE__);
-        debug("device is busy!\r\n");
-        return -1;
-    }
+    int ret = 0;
+    filp->private_data = &chrkey; /*设置私有数据*/
 
-    filp->private_data = &chrled; /*设置私有数据*/
+    ret = key_gpio_init();
+    if( ret < 0 )
+    {
+        debug( "FILE: %s, LINE: %d:\r\n", __FILE__, __LINE__ );
+        debug( "key init error!\r\n" );        
+        return ret;
+    }
     return 0;
 }
 
-/*================================================================ 
- * 函数名：led_release
- * 功能描述：应用层调用close关闭设备时就会调用该函数
+/*================================================================
+ * 函数名：key_release
+ * 功能描述：释放设备文件
  * 参数：
  *      inode[IN]: 设备节点
- *      filp [IN]: 要关闭的设备文件
+ *      filp [IN]: 要打开的设备文件
  * 返回值：
  *      成功: 0
  *      失败: -1
  * 作者：Yang Mou 2022/1/18
 ================================================================*/
-static int led_release( struct inode *inode, struct file *filp )
+static int key_release( struct inode *inode, struct file *filp )
 {
-    struct chrdev *dev = filp->private_data;
-    /* 关闭驱动文件的时候释放原子变量 */
-    atomic_inc(&dev->lock);
+
+    gpio_free( chrkey.key_gpio ); /*释放GPIO*/
     return 0;
 }
 
-static ssize_t led_read( struct file *filp, char __user *buf, size_t cnt, loff_t *offt)
-{
-    return 0;
-}
-
-/*================================================================ 
- * 函数名：led_write
- * 功能描述：控制LED的状态
+/*================================================================
+ * 函数名：key_read
+ * 功能描述：读取设备文件
  * 参数：
- *      filp [IN]： 要打开的设备文件
- *      buf  [OUT]：传递给内核空间的数据缓冲区
- *      cnt  [IN]： 要读取的数据长度
- *      offt [IN]： 相对于文件首地址的偏移
+ *      filp [IN]:  要打开的设备文件
+ *      buf  [OUT]: 用户空间的buf
  * 返回值：
- *      成功：读取的字节数 
- *      失败：-1
- * 作者：Yang Mou 2022/1/10
+ *      成功: 0
+ *      失败: -1
+ * 作者：Yang Mou 2022/1/18
 ================================================================*/
-static ssize_t led_write( struct file *filp, const char __user *buf, size_t cnt, loff_t *offt )
+static ssize_t key_read( struct file *filp, char __user *buf, size_t cnt, loff_t *offt )
 {
-    int retvalue;
-    unsigned char databuf[1];
-    unsigned char ledstat;
-    struct chrdev *dev = filp->private_data;
+    int ret = 0;
+    unsigned char value;
+    struct keydev *dev = filp->private_data; /*获取私有数据*/
 
-
-    retvalue = copy_from_user( databuf, buf, cnt );
-    if( retvalue < 0 )
+    if( 0 == gpio_get_value( dev->key_gpio ) )
     {
-        debug ("FILE: %s, LINE: %d", __FILE__, __LINE__);
-        debug("kernel write failed!\r\n");
-        return -1;
+        while( !gpio_get_value( dev->key_gpio ) )
+        {
+            atomic_set( &dev->keyvalue, KEY0VALUE );
+        }
     }
-
-    ledstat = databuf[0];
-    if( ledstat == LED_ON )
+    else
     {
-        gpio_set_value( dev->led_gpio, 0 );
-    }
-    else if(ledstat == LED_OFF)
-    {
-        gpio_set_value( dev->led_gpio, 1 );
+        atomic_set( &dev->keyvalue, INVAKEY );
     }
     
-    return 0;
-} 
+    value = atomic_read( &dev->keyvalue );
+    ret = copy_to_user( buf, &value, sizeof( value ) ); /* 将value的值拷贝到用户空间 */
+    return ret;
+}
 
-static struct file_operations led_fops =
-{
-    .owner = THIS_MODULE,
-    .open = led_open,
-    .read = led_read,
-    .write = led_write,
-    .release = led_release,
-};
+
 
 
 /*================================================================ 
- * 函数名：led_init
+ * 函数名：key_init
  * 功能描述：加载字符设备
  * 参数：
  *      void
@@ -134,70 +151,42 @@ static struct file_operations led_fops =
  *      失败：-1
  * 作者：Yang Mou 2022/1/9
 ================================================================*/
-static int __init led_init( void )
+static int __init mykey_init( void )
 {
-    int ret;
   
     /* 初始化原子变量 */
-    atomic_set( &chrled.lock, 1 );/* 原子变量初始值为 1 */
-
-    /*获取设备节点*/
-    chrled.nd = of_find_node_by_path( "/led" );
-    if( NULL == chrled.nd )
-    {
-        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
-        debug( "alphaled node can not found!\r\n" );
-        return -1;
-    }
-
-    /*获取设备树中的 gpio 属性，得到 LED 所使用的 LED 编号*/
-    chrled.led_gpio = of_get_named_gpio( chrled.nd, "led-gpio", 0 );
-    if( chrled.led_gpio < 0 )
-    {
-        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
-        debug( "can't get led-gpio!\r\n" );
-        return -1;
-    }
-
-    /* 设置 GPIO1_IO03 为输出，并且输出高电平，默认关闭 LED 灯 */
-    ret = gpio_direction_output( chrled.led_gpio, 1 );
-    if( ret < 0 )
-    {
-        debug( "FILE: %s, LINE: %d", __FILE__, __LINE__ );
-        debug( "can't set gpio!\r\n" );
-        return -1;        
-    }
+    atomic_set( &chrkey.keyvalue, INVAKEY );
 
     /*申请设备号*/
-    if( chrled.major )
+    if( chrkey.major )
     {
-        chrled.devid = MKDEV( chrled.major, 0 );
-        register_chrdev_region( chrled.devid, LED_CNT, LED_NAME);
+        chrkey.devid = MKDEV( chrkey.major, 0 );
+        register_chrdev_region( chrkey.devid, KEY_CNT, KEY_NAME);
     }
     else
     {
-        alloc_chrdev_region( &chrled.devid, 0, LED_CNT, LED_NAME );
-        chrled.major = MAJOR( chrled.devid );
-        chrled.minor = MINOR( chrled.devid );
+        alloc_chrdev_region( &chrkey.devid, 0, KEY_CNT, KEY_NAME );
+        chrkey.major = MAJOR( chrkey.devid );
+        chrkey.minor = MINOR( chrkey.devid );
     }
 
     /*初始化cdev*/
-    chrled.cdev.owner = THIS_MODULE;
-    cdev_init( &chrled.cdev, &led_fops );
-    cdev_add( &chrled.cdev, chrled.devid, LED_CNT );
+    chrkey.cdev.owner = THIS_MODULE;
+    cdev_init( &chrkey.cdev, &key_fops );
+    cdev_add( &chrkey.cdev, chrkey.devid, KEY_CNT );
 
     /*创建类*/
-    chrled.class = class_create( THIS_MODULE, LED_NAME );
-    if( IS_ERR( chrled.class ) )
+    chrkey.class = class_create( THIS_MODULE, KEY_NAME );
+    if( IS_ERR( chrkey.class ) )
     {
-        return PTR_ERR( chrled.class );
+        return PTR_ERR( chrkey.class );
     }
 
     /*创建设备*/
-    chrled.device = device_create( chrled.class, NULL, chrled.devid, NULL, LED_NAME );
-    if( IS_ERR( chrled.device ) )
+    chrkey.device = device_create( chrkey.class, NULL, chrkey.devid, NULL, KEY_NAME );
+    if( IS_ERR( chrkey.device ) )
     {
-        return PTR_ERR( chrled.device );
+        return PTR_ERR( chrkey.device );
     }
 
     debug( "led init\r\n" );
@@ -206,7 +195,7 @@ static int __init led_init( void )
 
 
 /*================================================================ 
- * 函数名：led_exit
+ * 函数名：key_exit
  * 功能描述：退出字符设备
  * 参数：
  *      void
@@ -214,28 +203,21 @@ static int __init led_init( void )
  *      空
  * 作者：Yang Mou 2022/1/9
 ================================================================*/
-static void __exit led_exit( void )
+static void __exit mykey_exit( void )
 {
-    iounmap( IMX6U_CCM_CCGR1 );
-    iounmap( SW_MUX_GPIO1_IO03 );
-    iounmap( SW_PAD_GPIO1_IO03 );
-    iounmap( GPIO1_DR );
-    iounmap( GPIO1_GDIR );
+    cdev_del( &chrkey.cdev );
+    unregister_chrdev_region( chrkey.devid, KEY_CNT );
 
-    //*unregister_chrdev( LED_MAJOR, LED_NAME );*/
-    cdev_del( &chrled.cdev );
-    unregister_chrdev_region( chrled.devid, LED_CNT );
+    device_destroy( chrkey.class, chrkey.devid );
+    class_destroy( chrkey.class );
 
-    device_destroy( chrled.class, chrled.devid );
-    class_destroy( chrled.class );
-
-    debug("led exit!\r\n");
+    debug("key exit!\r\n");
 
     return;
 }
 
-module_init( led_init );
-module_exit( led_exit );
+module_init( mykey_init );
+module_exit( mykey_exit );
 
 MODULE_LICENSE( "GPL" );
 MODULE_AUTHOR("YangMou");
