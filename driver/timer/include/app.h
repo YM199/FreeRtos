@@ -20,7 +20,7 @@
 
 #define CLOSE_CMD     (_IO(0XEF, 0X01)) /*关闭定时器*/
 #define OPEN_CMD      (_IO(0xEF, 0X02)) /*打开定时器*/
-#define SETPERIOD_CMD (_IO(0XEF, 0X01)) /*设置定时器周期命令*/
+#define SETPERIOD_CMD (_IO(0XEF, 0X03)) /*设置定时器周期命令*/
 
 
 
