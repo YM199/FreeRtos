@@ -146,16 +146,17 @@
 		};
 	};
 
-    led {
-        #address-cells = <1>;
-        #size-cells = <1>;
-        compatible = "atkalpha-led";
+	key {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "atkalpha-key";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_led>;
-		led-gpio = <&gpio1 3 GPIO_ACTIVE_LOW>;
-        status = "okay";
-    };
-
+		pinctrl-0 = <&pinctrl_key>;
+		key-gpio = <&gpio1 18 GPIO_ACTIVE_LOW>;
+		interrupt-parent = <&gpio1>; /*中断控制器为 gpio1*/
+		interrupts = <18 IRQ_TYPE_EDGE_BOTH>; /*上升沿和下降沿触发*/
+		status = "okay";
+	};
 };
 
 &cpu0 {
@@ -573,12 +574,6 @@
 			>;
 		};
 	};
-
-	pinctrl_led: ledgrp {
-		fsl,pins = <
-			MX6UL_PAD_GPIO1_IO03__GPIO1_IO03     0x10B0
-		>;
-	};
 };
 
 &iomuxc_snvs {
@@ -636,6 +631,13 @@
                         >;
                 };
         };
+
+
+		pinctrl_key: keygrp{
+			fsl,pins = <
+				MX6UL_PAD_UART1_CTS_B__GPIO1_IO18     0xF080
+			>;
+		};
 };
 
 
