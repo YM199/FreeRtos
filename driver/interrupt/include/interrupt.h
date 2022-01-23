@@ -23,8 +23,8 @@
 #include <asm/io.h>
 
 
-#define IMX6UIRQ_CNT   1           /*设备号个数*/   
-#define IMX6UIRQ_NAME  "imx6uirq"  /*名字*/
+#define IRQ_CNT   1           /*设备号个数*/   
+#define IRQ_NAME  "irq"  /*名字*/
 #define KEY0VALUE      0x01        /*KEY0按键值*/
 #define INVAKEY        0xFF        /*无效的按键值*/
 #define KEY_NUM        1           /*按键数量*/
@@ -46,7 +46,7 @@ struct irq_keydesc {
     irqreturn_t (*handler)(int, void *); /*中断服务函数*/
 };
 
-struct imx6uirq_dev
+struct irq_dev
 {
     dev_t devid;            /*设备号*/
     struct cdev cdev;   
