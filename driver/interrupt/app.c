@@ -15,7 +15,7 @@ int main( int argc, char *argv[] )
     int ret = 0;
     char *filename;
     unsigned char data;
-    if(argc != 2)
+    if( argc != 2 )
     {
         debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
         return -1;
@@ -27,20 +27,7 @@ int main( int argc, char *argv[] )
         debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
     }
     
-    while( 1 )
-    {
-        ret = read( fd, &data, sizeof( data ) );
-        if ( ret < 0 )
-        {
-
-        }
-        else
-        {
-            if( data )
-            {
-                debug( "key value: %d\n", data);
-            }
-        }
-    }
+    while( 1 ){}
+    close( fd );
     return 0;
 }

@@ -3,16 +3,12 @@
 struct irq_dev irqdev;
 
 static int irq_open( struct inode *inode, struct file *filp);
-static long irq_unlocked_ioctl( struct file *filp, unsigned int cmd, unsigned long arg);
 static int irq_release( struct inode *inode, struct file *filp );
-static ssize_t irq_read( struct file *filp, char __user *buf, size_t cnt, loff_t *offt );
 
 static struct file_operations irq_fops = {
     .owner = THIS_MODULE,
     .open = irq_open,
     .release = irq_release,
-    .read = irq_read,
-    .unlocked_ioctl = irq_unlocked_ioctl,
 };
 
 /*================================================================ 
@@ -27,10 +23,7 @@ static struct file_operations irq_fops = {
 ================================================================*/
 static irqreturn_t key0_handler(int irq, void *dev_id)
 {
-    struct irq_dev *dev = (struct irq_dev *)dev_id;
-
-    dev->timer.data = (volatile long)dev_id;
-    debug( "hello wprld \r\n");
+    debug( "hello world \r\n");
     return IRQ_RETVAL(IRQ_HANDLED);
 }
 
@@ -68,14 +61,10 @@ static int keyio_init(void)
     gpio_request( irqdev.irqkeydesc.gpio, irqdev.irqkeydesc.name );
     gpio_direction_input( irqdev.irqkeydesc.gpio );
     irqdev.irqkeydesc.irqnum = irq_of_parse_and_map( irqdev.nd, 0); /*获取中断号*/
-    debug("irqnum: %d\r\n", irqdev.irqkeydesc.irqnum );
-
 
     /*中断*/
     irqdev.irqkeydesc.handler = key0_handler; /*设置中断回调函数*/
-    irqdev.irqkeydesc.value = KEY0VALUE;
-    
-    
+
     /*申请中断*/
     ret = request_irq( irqdev.irqkeydesc.irqnum, 
                        irqdev.irqkeydesc.handler, 
@@ -109,36 +98,7 @@ static int irq_open( struct inode *inode, struct file *filp)
 }
 
 
-static ssize_t irq_read( struct file *filp, char __user *buf, size_t cnt, loff_t *offt )
-{
-    int ret = 0;
-    unsigned char keyvalue = 0;
-    unsigned char releasekey = 0;
-    struct irq_dev *dev = ( struct irq_dev *)filp->private_data;
 
-    keyvalue = atomic_read( &dev->keyvalue );
-    releasekey = atomic_read( &dev->releasekey );
-
-    if( releasekey )
-    {
-        if( keyvalue & 0x80 )
-        {
-            keyvalue &= ~0x80;
-            ret = copy_to_user( buf, &keyvalue, sizeof( keyvalue ) );
-        }
-        else
-        {
-            return -1;
-        }
-        atomic_set( &dev->releasekey, 0 );
-    }
-    else
-    {
-        return -1;
-    }
-
-    return 0;
-}
 
 /*================================================================
  * 函数名：key_release
@@ -153,23 +113,12 @@ static ssize_t irq_read( struct file *filp, char __user *buf, size_t cnt, loff_t
 ================================================================*/
 static int irq_release( struct inode *inode, struct file *filp )
 {
-    unsigned char i = 0;
     struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
     
-    for ( i = 0; i < KEY_NUM; ++i )
-    {
-        gpio_free( dev->irqkeydesc.gpio );
-        debug("irqnum: %d\r\n", dev->irqkeydesc.irqnum );
-    }
+    gpio_free( dev->irqkeydesc.gpio );
+
     return 0;
 }
-
-static long irq_unlocked_ioctl( struct file *filp, unsigned int cmd, unsigned long arg)
-{
-    return 0;
-}
-
-
 
 /*================================================================ 
  * 函数名：Irq_init
@@ -217,8 +166,7 @@ static int __init Irq_init( void )
         return PTR_ERR( irqdev.device );        
     }
 
-    atomic_set( &irqdev.keyvalue, INVAKEY );
-    atomic_set( &irqdev.releasekey, 0 );
+
     keyio_init();
 
     return 0;
@@ -236,18 +184,10 @@ static int __init Irq_init( void )
 ================================================================*/
 static void __exit Irq_exit( void )
 {
-    unsigned char i = 0;
-
-    for( i = 0; i < KEY_NUM; ++i )
-    {
-        free_irq( irqdev.irqkeydesc.irqnum, &irqdev );
-
-    }
-
+    free_irq( irqdev.irqkeydesc.irqnum, &irqdev );
 
     cdev_del( &irqdev.cdev ); /*删除字符设备*/
     unregister_chrdev_region( irqdev.devid, IRQ_CNT ); /*注销设备号*/
-
 
     device_destroy( irqdev.class, irqdev.devid );
     class_destroy( irqdev.class );
