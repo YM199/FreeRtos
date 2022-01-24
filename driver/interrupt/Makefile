@@ -4,17 +4,14 @@ VPATH := include
 DEVICE_NAME := interrupt
 obj-m := $(DEVICE_NAME).o
 
-target: kernel_module app
+target: kernel_module
 
 kernel_module: $(DEVICE_NAME).h
 	$(MAKE) -C $(KERNELDIR) M=$(CURRENT_PATH) modules
 
-app: app.h
-	arm-linux-gnueabihf-gcc app.c -o app
 
 .PHONY: clean copy
 copy:
-	cp app $(DEVICE_NAME).ko /home/yangmou/linux/nfs/rootfs/yangmou/
+	cp $(DEVICE_NAME).ko /home/yangmou/linux/nfs/rootfs/yangmou/
 clean:
 	$(MAKE) -C $(KERNELDIR) M=$(CURRENT_PATH) clean
-	rm app

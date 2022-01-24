@@ -2,13 +2,8 @@
 
 struct irq_dev irqdev;
 
-static int irq_open( struct inode *inode, struct file *filp);
-static int irq_release( struct inode *inode, struct file *filp );
-
 static struct file_operations irq_fops = {
     .owner = THIS_MODULE,
-    .open = irq_open,
-    .release = irq_release,
 };
 
 /*================================================================ 
@@ -76,47 +71,6 @@ static int keyio_init(void)
         return -1;
     }                
     
-    return 0;
-}
-
-
-/*================================================================
- * 函数名：irq_open
- * 功能描述：打开设备文件
- * 参数：
- *      inode[IN]: 设备节点
- *      filp [IN]: 要打开的设备文件
- * 返回值：
- *      成功: 0
- *      失败: -1
- * 作者：Yang Mou 2022/1/21
-================================================================*/
-static int irq_open( struct inode *inode, struct file *filp)
-{
-    filp->private_data = &irqdev; /*设置私有数据*/
-    return 0;
-}
-
-
-
-
-/*================================================================
- * 函数名：key_release
- * 功能描述：释放设备文件
- * 参数：
- *      inode[IN]: 设备节点
- *      filp [IN]: 要打开的设备文件
- * 返回值：
- *      成功: 0
- *      失败: -1
- * 作者：Yang Mou 2022/1/21
-================================================================*/
-static int irq_release( struct inode *inode, struct file *filp )
-{
-    struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
-    
-    gpio_free( dev->irqkeydesc.gpio );
-
     return 0;
 }
 
