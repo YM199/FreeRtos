@@ -59,8 +59,7 @@ struct irq_dev
     atomic_t releasekey;    /*标记是否完成一次完成的按键*/
     
     struct timer_list timer;/*定时器*/
-    struct irq_keydesc irqkeydesc[KEY_NUM];/*按键描述数组*/
-    unsigned char curkeynum;/*当前的按键号*/
+    struct irq_keydesc irqkeydesc;/*按键描述*/
 };
 
 #endif
