@@ -139,7 +139,7 @@ static int __init Irq_init( void )
 static void __exit Irq_exit( void )
 {
     free_irq( irqdev.irqkeydesc.irqnum, &irqdev );
-
+    gpio_free( irqdev.irqkeydesc.gpio );
     cdev_del( &irqdev.cdev ); /*删除字符设备*/
     unregister_chrdev_region( irqdev.devid, IRQ_CNT ); /*注销设备号*/
 
