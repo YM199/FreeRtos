@@ -19,19 +19,37 @@ static int irq_open(struct inode *inode, struct file *filp)
 
 static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t *offt)
 {
+    int ret = 0;
     int data = 123;
-    unsigned char releasekey = 0;
     struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
 
-    releasekey = atomic_read( &dev->releasekey );
-
-    if( releasekey )
+    DECLARE_WAITQUEUE( wait, current ); /*定义一个等待队列*/
+    if( 0 == atomic_read( &dev->releasekey ) ) /*无按键按下并且松开*/
     {
-        int ret = copy_to_user( buf, &data, sizeof( data ) );
-        debug( ret != 0 );
-        atomic_set( &dev->releasekey, 0 ); /*标志清0*/
+        add_wait_queue( &dev->r_wait , &wait); /*添加到等待队列头*/
+        __set_current_state( TASK_INTERRUPTIBLE ); /*设置任务状态*/
+        schedule(); /*设置任务切换,当前进程就会进入到休眠态，唤醒时会从下一条语句开始执行*/
+        if( signal_pending( current ) )
+        {
+            /*当收到 -ERESTARTSYS这个返回值后，对于linux来讲，会自动的重新调用这个调用*/
+            ret = -ERESTARTSYS;
+            goto wait_error;
+        }
+        __set_current_state( TASK_RUNNING ); /*设置为运行状态*/
+        remove_wait_queue( &dev->r_wait, &wait ); /*将等待队列移除*/
     }
+    else /*按键按下并且松开*/
+    {
+        ret = copy_to_user( buf, &data, sizeof( data ) );
+        debug( ret != 0 );
+        atomic_set( &dev->releasekey, 0 );
+    }
+
     return 0;
+wait_error:
+    set_current_state( TASK_RUNNING ); /*设置任务为运行态*/
+    remove_wait_queue( &dev->r_wait, &wait ); /*将等待队列移除*/
+    return ret;
 }
 
 /*================================================================ 
@@ -69,6 +87,12 @@ void timer_function( unsigned long arg )
     else /*按键已经松开*/
     {
         atomic_set( &dev->releasekey, 1 ); /*表示按键按下并且已经松开*/
+    }
+
+    /*完成一次按键动作*/
+    if( atomic_read(&dev->releasekey) )
+    {
+        wake_up_interruptible( &dev->r_wait ); /*唤醒进程*/
     }
 
     return;
@@ -112,6 +136,8 @@ static int keyio_init(void)
 
     init_timer( &irqdev.timer ); /*初始化定时器*/
     irqdev.timer.function = timer_function; /*设置定时器的回调函数，当前定时器并未开始运行*/
+
+    init_waitqueue_head( &irqdev.r_wait ); /*初始化等待队列头*/
 
     return 0;
 }

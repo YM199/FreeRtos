@@ -24,7 +24,7 @@
 
 
 #define IRQ_CNT   1      /*设备号个数*/
-#define IRQ_NAME  "irq"  /*名字*/
+#define IRQ_NAME  "blockio"  /*名字*/
 
 #define DEBUG
 #ifdef DEBUG
@@ -32,7 +32,7 @@
     if( condition ) \
     {\
         printk( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );\
-        while( 1 );\
+        while(1);\
     }
 #else
     #define debug(...)
@@ -60,6 +60,8 @@ struct irq_dev
     atomic_t releasekey;/* 标记是否完成一次完成的按键，包括按下和释放 1代表完成 0代表未完成*/
 
     struct timer_list timer; /*代表一个定时器*/
+
+    wait_queue_head_t r_wait; /*等待队列头*/
 };
 
 #endif
