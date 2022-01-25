@@ -19,16 +19,20 @@ static int irq_open(struct inode *inode, struct file *filp)
 
 static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t *offt)
 {
-    unsigned char keyvalue = 0;
+    int data = 123;
     unsigned char releasekey = 0;
     struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
 
-    keyvalue = atomic_read( &dev->keyvalue );
     releasekey = atomic_read( &dev->releasekey );
 
     if( releasekey )
     {
-        printk( "keyvalue: %#x\r\b", keyvalue );
+        int ret = copy_to_user( buf, &data, sizeof( data ) );
+        if(ret != 0)
+        {
+            debug(" __FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
+            return -1;
+        }
         atomic_set( &dev->releasekey, 0 ); /*标志清0*/
     }
     return 0;
@@ -65,11 +69,11 @@ void timer_function( unsigned long arg )
     value = gpio_get_value( keydesc->gpio ); /*读取按键*/
     if( value == 0 ) /*按键还没松开*/
     {
-        atomic_set( &dev->keyvalue, 0x01 );
+        
     }
     else /*按键已经松开*/
     {
-        atomic_set( &dev->keyvalue, 0x80 | 0x01 );
+        
         atomic_set( &dev->releasekey, 1 ); /*表示按键按下并且已经松开*/
     }
 
@@ -178,7 +182,6 @@ static int __init Irq_init( void )
         return PTR_ERR( irqdev.device );        
     }
 
-    atomic_set( &irqdev.keyvalue, 0XFF );
     atomic_set( &irqdev.releasekey, 0 );
     keyio_init();
 

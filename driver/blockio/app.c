@@ -29,7 +29,8 @@ int main( int argc, char **argv )
         {
             if( data )
             {
-                printf( "key value = %#x\r\n", data );
+                printf( "key value = %d\r\n", data );
+                data = 0;
             }
         }
     }

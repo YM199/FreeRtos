@@ -53,7 +53,6 @@ struct irq_dev
     struct device_node *nd; /*设备节点*/
     struct irq_keydesc irqkeydesc;/*按键描述*/
 
-    atomic_t keyvalue; /*这个变量不要也可以，不懂为什么要设置*/
     atomic_t releasekey;/* 标记是否完成一次完成的按键，包括按下和释放 1代表完成 0代表未完成*/
 
     struct timer_list timer; /*代表一个定时器*/
