@@ -9,7 +9,7 @@ target: kernel_module app
 kernel_module: $(DEVICE_NAME).h
 	$(MAKE) -C $(KERNELDIR) M=$(CURRENT_PATH) modules
 
-app: app.h
+app: app.c app.h
 	arm-linux-gnueabihf-gcc app.c -o app
 
 .PHONY: clean copy
