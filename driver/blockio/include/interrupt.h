@@ -23,14 +23,18 @@
 #include <asm/io.h>
 
 
-#define IRQ_CNT   1      /*设备号个数*/   
+#define IRQ_CNT   1      /*设备号个数*/
 #define IRQ_NAME  "irq"  /*名字*/
 
 #define DEBUG
-
-#ifdef DEBUG 
-    #define debug(...) printk(__VA_ARGS__)
-#else 
+#ifdef DEBUG
+    #define debug( condition )\
+    if( condition )\
+    {\
+        printk( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );\
+        while( 1 );\
+    }\
+#else
     #define debug(...)
 #endif
 
