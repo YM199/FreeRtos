@@ -1,13 +1,13 @@
-#ifndef __INTERRUPT_H__
-#define __INTERRUPT_H__
+#ifndef __BLOCKIO_H__
+#define __BLOCKIO_H__
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/delay.h>
 #include <linux/ide.h>
-#include <linux/init.h> 
-#include <linux/module.h> 
-#include <linux/errno.h> 
-#include <linux/gpio.h> 
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/errno.h>
+#include <linux/gpio.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/of.h>
@@ -28,12 +28,12 @@
 
 #define DEBUG
 #ifdef DEBUG
-    #define debug( condition )\
-    if( condition )\
+    #define debug(condition) \
+    if( condition ) \
     {\
         printk( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );\
         while( 1 );\
-    }\
+    }
 #else
     #define debug(...)
 #endif
@@ -49,7 +49,7 @@ struct irq_keydesc {
 struct irq_dev
 {
     dev_t devid;            /*设备号*/
-    struct cdev cdev;   
+    struct cdev cdev;
     struct class *class;
     struct device *device;
     int major;              /*主设备号*/

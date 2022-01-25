@@ -1,4 +1,4 @@
-#include "include/interrupt.h"
+#include "include/blockio.h"
 
 struct irq_dev irqdev;
 
@@ -28,11 +28,7 @@ static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t 
     if( releasekey )
     {
         int ret = copy_to_user( buf, &data, sizeof( data ) );
-        if(ret != 0)
-        {
-            debug(" __FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-            return -1;
-        }
+        debug( ret != 0 );
         atomic_set( &dev->releasekey, 0 ); /*标志清0*/
     }
     return 0;
@@ -69,11 +65,9 @@ void timer_function( unsigned long arg )
     value = gpio_get_value( keydesc->gpio ); /*读取按键*/
     if( value == 0 ) /*按键还没松开*/
     {
-        
     }
     else /*按键已经松开*/
     {
-        
         atomic_set( &dev->releasekey, 1 ); /*表示按键按下并且已经松开*/
     }
 
@@ -95,20 +89,10 @@ static int keyio_init(void)
     int ret = 0;
 
     irqdev.nd = of_find_node_by_path( "/key" ); /* 获取/dev/key */
-    if( NULL == irqdev.nd )
-    {
-        debug( "FILE: %s, LINE: %d:\r\n", __FILE__, __LINE__ );
-        return -1;        
-    }
-
+    debug( NULL == irqdev.nd );
 
     irqdev.irqkeydesc.gpio = of_get_named_gpio( irqdev.nd, "key-gpio", 0 );
-    if( irqdev.irqkeydesc.gpio < 0 )
-    {
-        /*提取GPIO失败*/
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-    }
-    
+    debug( irqdev.irqkeydesc.gpio < 0 );
     memset( irqdev.irqkeydesc.name, 0, sizeof( irqdev.irqkeydesc.name ) );/*将数组清0*/
     sprintf( irqdev.irqkeydesc.name, "KEY%d", 0 );/*中断名字*/
     gpio_request( irqdev.irqkeydesc.gpio, irqdev.irqkeydesc.name ); /*申请GPIO*/
@@ -119,16 +103,12 @@ static int keyio_init(void)
     irqdev.irqkeydesc.handler = key0_handler; /*设置中断回调函数*/
 
     /*申请中断*/
-    ret = request_irq( irqdev.irqkeydesc.irqnum, 
-                       irqdev.irqkeydesc.handler, 
+    ret = request_irq( irqdev.irqkeydesc.irqnum,
+                       irqdev.irqkeydesc.handler,
                        IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING, /*上升沿和下降沿*/
                        irqdev.irqkeydesc.name, &irqdev );/*irqdev 会传递给中断处理函数 irq_handler_t 的第二个参数*/
-    if( ret < 0 )
-    {
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-        return -1;
-    }                
-    
+
+    debug( ret < 0 );
 
     init_timer( &irqdev.timer ); /*初始化定时器*/
     irqdev.timer.function = timer_function; /*设置定时器的回调函数，当前定时器并未开始运行*/
@@ -136,14 +116,14 @@ static int keyio_init(void)
     return 0;
 }
 
-/*================================================================ 
+/*================================================================
  * 函数名：Irq_init
  * 功能描述：加载驱动模块时会调用该函数
  * 参数：
  *      void
  * 返回值：
  *      成功: 0
- *      失败: 
+ *      失败:
  * 作者：Yang Mou 2022/1/21
 ================================================================*/
 static int __init Irq_init( void )
@@ -170,17 +150,9 @@ static int __init Irq_init( void )
 
     /*自动创建设备节点*/
     irqdev.class =  class_create( THIS_MODULE, IRQ_NAME );
-    if( IS_ERR( irqdev.class ) )
-    {
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-        return PTR_ERR( irqdev.class );
-    }
+    debug( IS_ERR( irqdev.class ) );
     irqdev.device = device_create( irqdev.class, NULL, irqdev.devid, NULL, IRQ_NAME );
-    if( IS_ERR( irqdev.device ) )
-    {
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-        return PTR_ERR( irqdev.device );        
-    }
+    debug( IS_ERR( irqdev.device ) );
 
     atomic_set( &irqdev.releasekey, 0 );
     keyio_init();
@@ -188,14 +160,14 @@ static int __init Irq_init( void )
     return 0;
 }
 
-/*================================================================ 
+/*================================================================
  * 函数名：Irq_exit
  * 功能描述：卸载驱动模块时会调用该函数
  * 参数：
  *      void
  * 返回值：
  *      成功: 0
- *      失败: 
+ *      失败:
  * 作者：Yang Mou 2022/1/21
 ================================================================*/
 static void __exit Irq_exit( void )

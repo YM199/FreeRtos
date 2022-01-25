@@ -12,9 +12,14 @@
 
 #define DEBUG
 
-#ifdef DEBUG 
-    #define debug(...) printf(__VA_ARGS__)
-#else 
+#ifdef DEBUG
+    #define debug(condition) \
+    if( condition ) \
+    {\
+        printf( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );\
+        while( 1 );\
+    }
+#else
     #define debug(...)
 #endif
 

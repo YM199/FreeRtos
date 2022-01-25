@@ -7,20 +7,14 @@ int main( int argc, char **argv )
     int data = 0;
     char *filename;
 
-    if( argc < 2 )
-    {
-        debug(  "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-        return -1;
-    }
+    debug( argc < 2 );
+
 
     filename = argv[1];
 
     fd = open( filename, O_RDWR );
-    if( fd < 0 )
-    {
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-        return -1;
-    }
+    debug( fd < 0 );
+
 
     while( 1 )
     {
