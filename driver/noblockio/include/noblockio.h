@@ -17,14 +17,15 @@
 #include <linux/timer.h>
 #include <linux/of_irq.h>
 #include <linux/irq.h>
-
+#include <linux/wait.h>
+#include <linux/poll.h>
 #include <asm/mach/map.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
 
 
 #define IRQ_CNT   1      /*设备号个数*/
-#define IRQ_NAME  "blockio"  /*名字*/
+#define IRQ_NAME  "noblockio"  /*名字*/
 
 #define DEBUG
 #ifdef DEBUG

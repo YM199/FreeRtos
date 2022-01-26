@@ -4,11 +4,13 @@ struct irq_dev irqdev;
 
 static int irq_open(struct inode *inode, struct file *filp);
 static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t *offt);
+unsigned int irq_poll( struct file *filp, struct poll_table_struct *wait );
 
 static struct file_operations irq_fops = {
     .owner = THIS_MODULE,
     .open = irq_open,
     .read = irq_read,
+    .poll = irq_poll,
 };
 
 static int irq_open(struct inode *inode, struct file *filp)
@@ -23,36 +25,55 @@ static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t 
     int data = 123;
     struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
 
-    DECLARE_WAITQUEUE( wait, current ); /*定义一个等待队列*/
-    if( 0 == atomic_read( &dev->releasekey ) ) /*无按键按下并且松开*/
+    unsigned char releasekey = atomic_read(&dev->releasekey);
+
+    if( filp->f_flags & O_NONBLOCK) /*非阻塞访问*/
     {
-        add_wait_queue( &dev->r_wait , &wait); /*添加到等待队列头*/
-        __set_current_state( TASK_INTERRUPTIBLE ); /*设置任务状态*/
-        schedule(); /*设置任务切换,当前进程就会进入到休眠态，唤醒时会从下一条语句开始执行*/
-        if( signal_pending( current ) )
+        if( releasekey == 0 )
         {
-            /*当收到 -ERESTARTSYS这个返回值后，对于linux来讲，会自动的重新调用这个调用*/
-            ret = -ERESTARTSYS;
+            return -EAGAIN;/*没有被按下直接返回错误码*/
+        }
+    }
+    else
+    {
+        ret = wait_event_interruptible( dev->r_wait, releasekey ); /*加入等待队列，等待被唤醒*/
+        if( ret )
+        {
             goto wait_error;
         }
-        __set_current_state( TASK_RUNNING ); /*设置为运行状态*/
-        remove_wait_queue( &dev->r_wait, &wait ); /*将等待队列移除*/
     }
-    else /*按键按下并且松开*/
+    if( releasekey )
     {
-        ret = copy_to_user( buf, &data, sizeof( data ) );
-        debug( ret != 0 );
+        ret = copy_to_user( buf, &data, sizeof( data ));
         atomic_set( &dev->releasekey, 0 );
+    }
+    else
+    {
+        goto data_error;
     }
 
     return 0;
 wait_error:
-    set_current_state( TASK_RUNNING ); /*设置任务为运行态*/
-    remove_wait_queue( &dev->r_wait, &wait ); /*将等待队列移除*/
     return ret;
+data_error:
+    return -EINVAL;
 }
 
-/*================================================================ 
+unsigned int irq_poll( struct file *filp, struct poll_table_struct *wait )
+{
+    unsigned int mask = 0;
+    struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
+
+    poll_wait( filp, &dev->r_wait, wait ); /*将等待队列头添加到poll_table中*/
+    if( atomic_read( &dev->releasekey ) ) /*按键按下并且松开*/
+    {
+        mask =  POLLIN | POLLRDNORM; /*有数据可以读取*/
+    }
+
+    return mask;
+}
+
+/*================================================================
  * 函数名：key0_handler
  * 功能描述：按键中断处理函数
  * 参数：
