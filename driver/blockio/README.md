@@ -10,7 +10,7 @@
 
 首先要定义一个等待队列头，`wait_queue_head_t r_wait;`,再调用`init_waitqueue_head(&r_wait);`进行初始化。
 
->另外一种方法是使用宏`DECLARE_WAIT_QUEUE_HEAD(r_wait)`一次性完成定义和初始化操作。
+> 另外一种方法是使用宏`DECLARE_WAIT_QUEUE_HEAD(r_wait)`一次性完成定义和初始化操作。
 
 方法一:
 
@@ -54,3 +54,5 @@
     wake_up_interruptible( &r_wait ); /*能唤醒处于 TASK_INTERRUPTIBLE 状态的进程*/
 
 一般在中断里面调用。
+
+> 除主动唤醒外，还可以设置为等待某个事件自动唤醒。
