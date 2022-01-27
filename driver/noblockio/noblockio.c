@@ -27,21 +27,7 @@ static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t 
 
     unsigned char releasekey = atomic_read(&dev->releasekey);
 
-    if( filp->f_flags & O_NONBLOCK) /*非阻塞访问*/
-    {
-        if( releasekey == 0 )
-        {
-            return -EAGAIN;/*没有被按下直接返回错误码*/
-        }
-    }
-    else
-    {
-        ret = wait_event_interruptible( dev->r_wait, releasekey ); /*加入等待队列，等待被唤醒*/
-        if( ret )
-        {
-            goto wait_error;
-        }
-    }
+
     if( releasekey )
     {
         ret = copy_to_user( buf, &data, sizeof( data ));
@@ -49,14 +35,11 @@ static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t 
     }
     else
     {
-        goto data_error;
+        return -1;/*没有被按下直接返回错误码*/
+        //return -EINVAL;
     }
 
     return 0;
-wait_error:
-    return ret;
-data_error:
-    return -EINVAL;
 }
 
 unsigned int irq_poll( struct file *filp, struct poll_table_struct *wait )
@@ -64,7 +47,6 @@ unsigned int irq_poll( struct file *filp, struct poll_table_struct *wait )
     unsigned int mask = 0;
     struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
 
-    poll_wait( filp, &dev->r_wait, wait ); /*将等待队列头添加到poll_table中*/
     if( atomic_read( &dev->releasekey ) ) /*按键按下并且松开*/
     {
         mask =  POLLIN | POLLRDNORM; /*有数据可以读取*/
@@ -110,11 +92,7 @@ void timer_function( unsigned long arg )
         atomic_set( &dev->releasekey, 1 ); /*表示按键按下并且已经松开*/
     }
 
-    /*完成一次按键动作*/
-    if( atomic_read(&dev->releasekey) )
-    {
-        wake_up_interruptible( &dev->r_wait ); /*唤醒进程*/
-    }
+
 
     return;
 }
@@ -158,7 +136,7 @@ static int keyio_init(void)
     init_timer( &irqdev.timer ); /*初始化定时器*/
     irqdev.timer.function = timer_function; /*设置定时器的回调函数，当前定时器并未开始运行*/
 
-    init_waitqueue_head( &irqdev.r_wait ); /*初始化等待队列头*/
+
 
     return 0;
 }
