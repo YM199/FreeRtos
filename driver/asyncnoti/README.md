@@ -42,4 +42,3 @@ static struct file_operation xxx_ops = {
 ```
 
 当设备可以访问时，驱动程序需要向应用程序发出信号，`kill_fasync`函数负责发出指定信号。
-
