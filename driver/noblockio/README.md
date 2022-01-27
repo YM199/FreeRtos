@@ -148,4 +148,23 @@ else if( ret < 0 )
 
 ---
 
-epoll函数用在大规模的并发服务器上面，暂未研究
+epoll函数用在大规模的并发服务器上面，暂未研究。
+
+---
+
+> 非阻塞模式并不需要等待队列，是根据驱动层的poll函数返回值来判断的，所以非阻塞模式需要构建驱动层的poll函数，阻塞模式不需要poll函数
+
+```c
+unsigned int irq_poll( struct file *filp, struct poll_table_struct *wait )
+{
+    unsigned int mask = 0;
+    struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
+
+    if( atomic_read( &dev->releasekey ) ) /*按键按下并且松开*/
+    {
+        mask =  POLLIN | POLLRDNORM; /*有数据可以读取*/
+    }
+
+    return mask; /*该函数的返回值就是应用层获取到的返回值*/
+}
+```
