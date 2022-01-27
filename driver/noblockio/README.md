@@ -1,5 +1,7 @@
 # 非阻塞IO实验
 
+## 应用层
+
 当设备不可用（不会挂起）：
 
 - 轮询等待：会立即向内核返回一个错误码，表示读取失败。应用程序会再次重新读取数据，这样一直重复循环直到读取成功。
@@ -48,6 +50,10 @@ void FD_CLR( int fd, fd_set *set );   /*将fd_set变量的某个位清0，也就
 int  FD_ISSET( int fd, fd_set *set ); /*测试文件描述符fd是否在fd_set变量中*/
 ```
 
+---
+
+select
+
 ```c
 int ret;
 fd_set readfds;
@@ -56,10 +62,12 @@ struct timeval timeout;
 timerout.tv_sec = 0;      /*秒*/
 timerout.tv_usec = 500000;/*微秒*/
 
+fd = open( "/dev/xxx_dev", O_RDWR | 0_NONBLOCK ); /*O_NONBLOCK表示已非阻塞方式打开设备*/
+
 FD_ZERO( &readfds ); /*所有位清0*/
 FD_SET( fd, &readfds ); /*某位置1，将fd加入到集合中*/
 
-ret = select( fd + 1, readfds, NULL, NULL, &timeout )
+ret = select( fd + 1, readfds, NULL, NULL, &timeout );
 switch (ret)
 {
     case 0: /* 超时 */
@@ -73,3 +81,71 @@ switch (ret)
     break;
 }
 ```
+
+---
+
+poll函数本质上和select函数没有太大区别，但poll函数没有最大文件描述符限制。
+
+```c
+int poll(
+          struct pollfd fds,
+          nfds_t nfds, /*要监视的文件描述符的数量*/
+          int timeout  /*超时时间，单位为ms*/
+        )
+```
+
+> ```c
+> struct pollfd
+> {
+>   int fd;        /* 文件描述符 */
+>   short events;  /* 请求的事件 */
+>   short revents; /* 返回的事件 */
+> };
+> ```
+>
+> fd是要监视的文件描述符
+>
+> events是要监视的事件:
+>
+> - POLLIN 有数据可以读取。
+> - POLLPRI 有紧急的数据需要读取。
+> - POLLOUT 可以写数据。
+> - POLLERR 指定的文件描述符发生错误。
+> - POLLHUP 指定的文件描述符挂起。
+> - POLLNVAL 无效的请求。
+> - POLLRDNORM 等同于 POLLIN。
+> - 等
+>
+> revents是返回的事件，在events中请求的任何事件都可能在revents中返回。
+
+```c
+int ret;
+int fd; /*要监视的文件描述符*/
+struct pollfd fds;
+
+fd = open( filename, O_RDWR | O_NONBLOCK ); /*非阻塞访问*/
+
+fds.fd = fd;
+fds.events = POLLIN; /*监视数据是否可以读取*/
+
+ret = poll( &fds, 1, 500 );
+if( ret )
+{
+    /*读取数据*/
+}
+else if( 0 == ret )
+{
+    /*超时*/
+}
+else if( ret < 0 )
+{
+    /*错误*/
+}
+```
+
+> 我理解的是poll函数如果没有监视到对应的事件，就会返回一个超时条件码( 可以做对应的超时处理 )，然后进行监视。
+> 经过测试，poll函数确实是不断的轮询调用的，不需要while函数辅助。
+
+---
+
+epoll函数用在大规模的并发服务器上面，暂未研究
