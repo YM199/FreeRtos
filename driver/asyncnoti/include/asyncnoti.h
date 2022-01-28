@@ -61,6 +61,7 @@ struct irq_dev
     atomic_t releasekey;/* 标记是否完成一次完成的按键，包括按下和释放 1代表完成 0代表未完成*/
 
     struct timer_list timer; /*代表一个定时器*/
+    struct fasync_struct *async_queue; /*异步相关结构体*/
 };
 
 #endif

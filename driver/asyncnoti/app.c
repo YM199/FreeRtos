@@ -1,57 +1,48 @@
 #include "include/app.h"
 
+static int fd = 0;
+
+/*================================================================
+ * 函数名：sigio_signal_func
+ * 功能：读取内核数据并打印
+ * 备注：信号SIGNO的处理函数
+================================================================*/
+static void sigio_signal_func( int signum )
+{
+	int err = 0;
+	unsigned int keyvalue = 0;
+
+	err = read( fd, &keyvalue, sizeof( keyvalue ) );
+	debug( err < 0,  );
+	printf( "sigio signal! key value=%d\r\n", keyvalue );
+}
+
+
 int main( int argc, char **argv )
 {
-    int fd;
-    int ret = 0;
-    int data = 0;
-    char *filename;
-    fd_set readfds;
-    struct timeval timeout;
-    debug( argc < 2 );
+	int flags = 0;
+	char *filename;
 
+	debug( argc != 2, -1 );
 
-    filename = argv[1];
+	filename = argv[1];
+	fd = open( filename, O_RDWR );
+	debug( fd < 0, -1 );
 
-    fd = open( filename, O_RDWR | O_NONBLOCK); /*非阻塞访问*/
-    debug( fd < 0 );
+	signal( SIGIO, sigio_signal_func ); /*设置信号SIGNO的处理函数*/
 
+	fcntl( fd, F_SETOWN, getpid() ); /*将当前进程的进程号告诉内核*/
 
-    while( 1 )
-    {
-	    FD_ZERO(&readfds);
-	    FD_SET(fd, &readfds);
-	    /* 构造超时时间 */
-	    timeout.tv_sec = 0;
-	    timeout.tv_usec = 500000; /* 500ms */
-	    ret = select(fd + 1, &readfds, NULL, NULL, &timeout);
-	    switch (ret)
-        {
-		    case 0: 	/* 超时 */
-			/* 用户自定义超时处理 */
-			break;
+	/*开启异步通知*/
+	flags = fcntl( fd, F_GETFL ); /*获取当前进程状态*/
+	fcntl( fd, F_SETFL, flags | FASYNC ); /*开启当前进程的异步通知功能*/
 
-		    case -1:	/* 错误 */
-			/* 用户自定义错误处理 */
-			break;
+	while(1)
+	{
+		sleep(2);
+	}
 
-		    default:  /* 可以读取数据 */
-			    if(FD_ISSET(fd, &readfds))
-                {
-				    ret = read(fd, &data, sizeof(data));
-				    if (ret < 0)
-                    {
-					    /* 读取错误 */
-				    }
-                    else
-                    {
-					    if (data)
-						    printf("key value=%d\r\n", data);
-				    }
-			    }
-			break;
-	    }
-    }
-    close( fd );
+	close( fd );
+
     return 0;
 }

@@ -1,23 +1,44 @@
 #include "include/asyncnoti.h"
 
 struct irq_dev irqdev;
+/*
+ *备注：函数声明区
+*/
+static int open(struct inode *inode, struct file *filp);
+static ssize_t read(struct file *filp, char __user *buf, size_t cnt, loff_t *offt);
+static int fasync( int fd, struct file *filp,  int on );
+static int release( struct inode *inode, struct file *filp );
 
-static int irq_open(struct inode *inode, struct file *filp);
-static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t *offt);
-
+/*===============================================================
+* 结构名称：irq_fops
+* 结构类型：file_operations
+* 备    注：每一个设备号对应一个file_operations类型的结构，存放该驱动程序的各种操作函数
+*===============================================================*/
 static struct file_operations irq_fops = {
     .owner = THIS_MODULE,
-    .open = irq_open,
-    .read = irq_read,
+    .open = open,
+    .release = release,
+    .fasync = fasync,
+    .read = read,
 };
 
-static int irq_open(struct inode *inode, struct file *filp)
+/*================================================================
+ * 函数名：open
+ * 功 能：无
+ * 备 注：应用层调用open时自动执行该函数
+================================================================*/
+static int open(struct inode *inode, struct file *filp)
 {
 	filp->private_data = &irqdev;	/* 设置私有数据 */
 	return 0;
 }
 
-static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t *offt)
+/*================================================================
+ * 函数名：read
+ * 功能：如果按键按下就向用户空间发送数据
+ * 备注：应用层调用read时自动执行该函数
+================================================================*/
+static ssize_t read(struct file *filp, char __user *buf, size_t cnt, loff_t *offt)
 {
     int ret = 0;
     int data = 123;
@@ -33,23 +54,38 @@ static ssize_t irq_read(struct file *filp, char __user *buf, size_t cnt, loff_t 
     }
     else
     {
-        return EINVAL;/*没有被按下直接返回错误码*/
+        return -EINVAL;/*没有被按下直接返回错误码*/
     }
 
     return 0;
 }
 
+/*================================================================
+ * 函数名：fasync
+ * 功能：调用fasync_helper初始化fasync_struct结构体，主要是应用程序的PID等信息
+ * 备注：应用层调用fcntl改变设备文件时自动执行该函数
+================================================================*/
+static int fasync( int fd, struct file *filp,  int on )
+{
+    struct irq_dev *dev = ( struct irq_dev * )filp->private_data;
 
+    return fasync_helper( fd, filp, on, &dev->async_queue );
+}
+
+/*================================================================
+ * 函数名：release
+ * 功能：资源释放
+ * 备注：应用层调用close改变设备文件时自动执行该函数
+================================================================*/
+static int release( struct inode *inode, struct file *filp )
+{
+    return fasync( -1, filp, 0); /*删除异步通知*/
+}
 
 /*================================================================
  * 函数名：key0_handler
- * 功能描述：按键中断处理函数
- * 参数：
- *      irqreturn_t
- * 返回值：
- *      成功: 0
- *      失败: -1
- * 作者：Yang Mou 2022/1/19
+ * 功能：打开定时器
+ * 备注：按键中断处理函数
 ================================================================*/
 static irqreturn_t key0_handler(int irq, void *dev_id)
 {
@@ -60,10 +96,13 @@ static irqreturn_t key0_handler(int irq, void *dev_id)
     return IRQ_RETVAL(IRQ_HANDLED);
 }
 
-
+/*================================================================
+ * 函数名：timer_function
+ * 功能：检查到按键松开置1标志位并发送信号
+ * 备注：定时器回调函数
+================================================================*/
 void timer_function( unsigned long arg )
 {
-    /*按键按下10ms后进入，相当于是个消抖*/
     struct irq_dev *dev = ( struct irq_dev * )arg;
     struct irq_keydesc *keydesc;
     unsigned char value;
@@ -78,18 +117,21 @@ void timer_function( unsigned long arg )
         atomic_set( &dev->releasekey, 1 ); /*表示按键按下并且已经松开*/
     }
 
+    if( atomic_read(&dev->releasekey) ) /*一次完整的按键过程*/
+    {
+        if( dev->async_queue ) /*TODO:为什么要判断一下？*/
+        {
+            kill_fasync( &dev->async_queue, SIGIO, POLL_IN ); /*应用程序注册的什么信号，这里就发送对应的信号*/
+        }
+    }
+
     return;
 }
 
 /*================================================================ 
  * 函数名：keyio_init
- * 功能描述：初始化GPIO
- * 参数：
- *      void
- * 返回值：
- *      成功: 0
- *      失败: -1
- * 作者：Yang Mou 2022/1/19
+ * 功能描述：初始化GPIO和定时器timer
+ * 备注: 初始化函数
 ================================================================*/
 static int keyio_init(void)
 {
@@ -125,13 +167,8 @@ static int keyio_init(void)
 
 /*================================================================
  * 函数名：Irq_init
- * 功能描述：加载驱动模块时会调用该函数
- * 参数：
- *      void
- * 返回值：
- *      成功: 0
- *      失败:
- * 作者：Yang Mou 2022/1/21
+ * 功能描述：完成驱动的注册和调用其他注册函数
+ * 备忘：加载驱动时自动调用该函数
 ================================================================*/
 static int __init Irq_init( void )
 {
@@ -169,13 +206,8 @@ static int __init Irq_init( void )
 
 /*================================================================
  * 函数名：Irq_exit
- * 功能描述：卸载驱动模块时会调用该函数
- * 参数：
- *      void
- * 返回值：
- *      成功: 0
- *      失败:
- * 作者：Yang Mou 2022/1/21
+ * 功能描述：释放驱动相关资源
+ * 备忘：驱动卸载时自动执行该函数
 ================================================================*/
 static void __exit Irq_exit( void )
 {
