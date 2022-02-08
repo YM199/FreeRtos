@@ -78,7 +78,9 @@ struct platform_driver {
 platform驱动框架如下:
 
 ```C
-#include "include/led_driver.h"
+struct xxx_dev{
+    struct cdev cdev;
+};
 
 struct xxx_dev xxxdev; /*定义设备结构体变量*/
 
@@ -125,6 +127,11 @@ static int probe( struct platform_device *dev )
     return 0;
 }
 
+/*
+* 函数名称: remove
+* 函数功能:
+* 函数备注: 注销驱动模块此函数就会执行
+*/
 static int remove( struct platform_device *dev )
 {
     cdev_del( &xxxdev.cdev ); /*删除 dev*/
@@ -134,7 +141,8 @@ static int remove( struct platform_device *dev )
 
 /*
 * 结构名称: of_match
-* 结构功能: 驱动和设备匹配列表
+* 结构功能: 驱动的兼容表
+* 结构备注: 一个驱动可以和多个设备匹配
 */
 static const struct of_device_id of_match[] = {
     { .compatible = "xxx-gpio" },
@@ -160,7 +168,7 @@ static struct platform_driver driver = {
  * 功能描述：完成驱动的注册和调用其他注册函数
  * 备忘：加载驱动时自动调用该函数
 */
-static int __init driver_init( void ) 
+static int __init driver_init( void )
 {
     return platform_driver_register( &driver ); /*数向 Linux 内核注册一个 platform 驱动*/
 }
