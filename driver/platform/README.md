@@ -181,3 +181,9 @@ module_exit( driver_exit );
 MODULE_LICENSE( "GPL" );
 MODULE_AUTHOR( "YangMou" );
 ```
+
+## platform 设备
+
+platform_device 这个结构体表示 platform 设备。
+>注意: 如果内核支持设备树，就不要使用 platform_device 来描述设备了，改用设备树去描述。
+>Linux 内核启动的时候会从设备树中读取设备信息，然后将其组织成 platform_device 形式。
