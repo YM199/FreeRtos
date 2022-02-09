@@ -72,6 +72,7 @@ static struct file_operations fops = {
 */
 static int probe( struct platform_device *dev )
 {
+    printk("led driver and device was matched!\r\n");
     /*申请设备号*/
     if( leddev.major )
     {
@@ -135,7 +136,7 @@ static int remove( struct platform_device *dev )
 * 结构备注: 一个驱动可以和多个设备匹配
 */
 static const struct of_device_id of_match[] = {
-    { .compatible = "atkalpha-gpioled" },
+    { .compatible = "atkalpha-led" },
     {},
 };
 
