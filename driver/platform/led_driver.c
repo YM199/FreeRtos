@@ -89,7 +89,7 @@ static int probe( struct platform_device *dev )
     }
 
     /*创建字符设备*/
-    //leddev.cdev.owner = THIS_MODULE; TODO:这个可以不要吗？
+    leddev.cdev.owner = THIS_MODULE;
     cdev_init( &leddev.cdev, &fops );
     cdev_add( &leddev.cdev, leddev.devid, DEV_CNT );
 
@@ -146,7 +146,7 @@ static const struct of_device_id of_match[] = {
 */
 static struct platform_driver driver = {
     .driver  = {
-        .name = "led",  /*驱动名字。可用于和设备匹配*/
+        .name = "led",  /*platform驱动名字。可用于和设备匹配  /sys/bus/platform/drivers/led */
         .of_match_table = of_match, /*设备树匹配表*/
     },
 

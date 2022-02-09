@@ -146,7 +146,7 @@
 		};
 	};
 
-    led {
+    led { /*led是platform设备的名字 /sys/bus/platform/devices/led */
         #address-cells = <1>;
         #size-cells = <1>;
         compatible = "atkalpha-led";

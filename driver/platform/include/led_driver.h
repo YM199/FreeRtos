@@ -37,7 +37,7 @@ struct led_dev{
 
 
 #define DEV_CNT  1
-#define DEV_NAME "led"
+#define DEV_NAME "led" /*字符设备的名字: /dev/led */
 #define LED_OFF  0
 #define LED_ON   1
 
