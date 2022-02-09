@@ -572,12 +572,12 @@
 				MX6UL_PAD_LCD_RESET__WDOG1_WDOG_ANY    0x30b0
 			>;
 		};
-	};
 
-	pinctrl_led: ledgrp {
-		fsl,pins = <
-			MX6UL_PAD_GPIO1_IO03__GPIO1_IO03     0x10B0
-		>;
+		pinctrl_led: ledgrp {
+			fsl,pins = <
+				MX6UL_PAD_GPIO1_IO03__GPIO1_IO03     0x10B0
+			>;
+		};
 	};
 };
 
