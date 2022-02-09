@@ -118,7 +118,7 @@ static struct file_operations fops = {
 /*
 * 函数名称: probe
 * 函数功能:
-* 函数备注: 驱动和设备匹配成功以后此函数就会执行
+* 函数备注: 当卸载 platform 驱动的时候此函数就会执行
 */
 static int probe( struct platform_device *dev )
 {
