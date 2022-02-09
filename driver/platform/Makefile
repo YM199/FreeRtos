@@ -1,7 +1,7 @@
 KERNELDIR := /home/yangmou/Desktop/IMX6ULL/kernel/linux-imx-rel_imx_4.1.15_2.1.0_ga/
 CURRENT_PATH := $(shell pwd)
 VPATH := include
-DEVICE_NAME := noblockio
+DEVICE_NAME := led_driver
 obj-m := $(DEVICE_NAME).o
 
 target: kernel_module app
