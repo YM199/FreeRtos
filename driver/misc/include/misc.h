@@ -34,8 +34,8 @@
 
 #define MISCBEEP_NAME   "miscbeep" /*名字*/
 #define MISCBEEP_MINOR  144        /*次设备号*/
-#define BEEP_OFF        0          /*关蜂鸣器*/
-#define BEEP_ON         1          /*打开蜂鸣器*/
+#define BEEPOFF        0          /*关蜂鸣器*/
+#define BEEPON         1          /*打开蜂鸣器*/
 
 /*miscbeep设备结构体*/
 struct miscbeep_dev

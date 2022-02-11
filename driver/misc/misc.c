@@ -23,7 +23,7 @@ static ssize_t write( struct file *filp, const char __user *buf, size_t cnt, lof
     int retvalue;
     unsigned char databuf[1];
     unsigned char beepstat;
-    struct miscbeep_dev *dev = filp->private;
+    struct miscbeep_dev *dev = filp->private_data;
 
     retvalue = copy_from_user( databuf, buf, cnt );
     debug( retvalue < 0, -EFAULT );
@@ -65,13 +65,14 @@ static struct miscdevice beep_miscdev = {
 */
 static int probe( struct platform_device *dev )
 {
-    printk("led driver and device was matched!\r\n");
     int ret = 0;
+    printk("led driver and device was matched!\r\n");
+
 
     miscbeep.nd = of_find_node_by_path( "/beep"); /*获取设备树节点*/
     debug( NULL == miscbeep.nd, -EINVAL );
 
-    miscbeep.beep_gpio = of_get_named_gpio( miscbeep.nd, "beep_gpio", 0 ); /*获取GPIO编号*/
+    miscbeep.beep_gpio = of_get_named_gpio( miscbeep.nd, "beep-gpio", 0 ); /*获取GPIO编号*/
     debug( miscbeep.beep_gpio < 0, -EINVAL );
 
     ret = gpio_direction_output( miscbeep.beep_gpio, 1 ); /*设置GPIO为输出，高电平*/
