@@ -6,84 +6,59 @@ static struct file_operations irq_fops = {
     .owner = THIS_MODULE,
 };
 
-/*================================================================ 
- * 函数名：key0_handler
- * 功能描述：按键中断处理函数
- * 参数：
- *      irqreturn_t
- * 返回值：
- *      成功: 0
- *      失败: -1
- * 作者：Yang Mou 2022/1/19
-================================================================*/
-static irqreturn_t key0_handler(int irq, void *dev_id)
+/*
+* 函数名称: key_handler
+* 函数功能: 打印信息
+* 函数备注: key按键中断的回调函数
+*/
+static irqreturn_t key_handler(int irq, void *dev_id)
 {
-    debug( "hello world \r\n");
+    printk( "hello world \r\n");
     return IRQ_RETVAL(IRQ_HANDLED);
 }
 
-/*================================================================ 
- * 函数名：keyio_init
- * 功能描述：初始化GPIO
- * 参数：
- *      void
- * 返回值：
- *      成功: 0
- *      失败: -1
- * 作者：Yang Mou 2022/1/19
-================================================================*/
+/*
+* 函数名称: keyio_init
+* 函数功能: 完成key的GPIO初始化和中断的初始化
+* 函数备注: 在驱动入口被调用
+*/
 static int keyio_init(void)
 {
     int ret = 0;
-    unsigned int i = 0;
-    irqdev.nd = of_find_node_by_path( "/key" ); /* 获取/dev/key */
-    if( NULL == irqdev.nd )
-    {
-        debug( "FILE: %s, LINE: %d:\r\n", __FILE__, __LINE__ );
-        return -1;        
-    }
 
+    irqdev.nd = of_find_node_by_path( "/key" ); /*获取设备树节点*/
+    debug( NULL == irqdev.nd, -1 );
 
-    irqdev.irqkeydesc.gpio = of_get_named_gpio( irqdev.nd, "key-gpio", i );
-    if( irqdev.irqkeydesc.gpio < 0 )
-    {
-        /*提取GPIO失败*/
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-    }
-    
+    irqdev.irqkeydesc.gpio = of_get_named_gpio( irqdev.nd, "key-gpio", 0 ); /*获取GPIO编号*/
+    debug( irqdev.irqkeydesc.gpio < 0, -1 );
+
+    /*设置key0的名字*/
     memset( irqdev.irqkeydesc.name, 0, sizeof( irqdev.irqkeydesc.name ) );/*将数组清0*/
-    sprintf( irqdev.irqkeydesc.name, "KEY%d", 0 );
+    sprintf( irqdev.irqkeydesc.name, "KEY%d", 0 );/*名字为KEY0*/
+
+    /*gpio*/
     gpio_request( irqdev.irqkeydesc.gpio, irqdev.irqkeydesc.name );
     gpio_direction_input( irqdev.irqkeydesc.gpio );
-    irqdev.irqkeydesc.irqnum = irq_of_parse_and_map( irqdev.nd, 0); /*获取中断号*/
 
     /*中断*/
-    irqdev.irqkeydesc.handler = key0_handler; /*设置中断回调函数*/
+    irqdev.irqkeydesc.irqnum = irq_of_parse_and_map( irqdev.nd, 0); /*获取中断号*/
+    irqdev.irqkeydesc.handler = key_handler; /*设置中断回调函数*/
 
     /*申请中断*/
-    ret = request_irq( irqdev.irqkeydesc.irqnum, 
-                       irqdev.irqkeydesc.handler, 
-                       IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING, 
+    ret = request_irq( irqdev.irqkeydesc.irqnum,
+                       irqdev.irqkeydesc.handler,
+                       IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING,
                        irqdev.irqkeydesc.name, &irqdev );/*irqdev 会传递给中断处理函数 irq_handler_t 的第二个参数*/
-    if( ret < 0 )
-    {
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-        return -1;
-    }                
-    
+    debug( ret < 0, -1 );
+
     return 0;
 }
 
-/*================================================================ 
+/*
  * 函数名：Irq_init
- * 功能描述：加载驱动模块时会调用该函数
- * 参数：
- *      void
- * 返回值：
- *      成功: 0
- *      失败: 
- * 作者：Yang Mou 2022/1/21
-================================================================*/
+ * 功能描述：完成驱动的注册和调用其他注册函数
+ * 备忘：加载驱动时自动调用该函数
+*/
 static int __init Irq_init( void )
 {
     /*申请设备号*/
@@ -108,34 +83,21 @@ static int __init Irq_init( void )
 
     /*自动创建设备节点*/
     irqdev.class =  class_create( THIS_MODULE, IRQ_NAME );
-    if( IS_ERR( irqdev.class ) )
-    {
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-        return PTR_ERR( irqdev.class );
-    }
-    irqdev.device = device_create( irqdev.class, NULL, irqdev.devid, NULL, IRQ_NAME );
-    if( IS_ERR( irqdev.device ) )
-    {
-        debug( "__FILE__: %s, __LINE__: %d\r\n", __FILE__, __LINE__ );
-        return PTR_ERR( irqdev.device );        
-    }
+    debug( IS_ERR( irqdev.class ), PTR_ERR( irqdev.class ) );
 
+    irqdev.device = device_create( irqdev.class, NULL, irqdev.devid, NULL, IRQ_NAME );
+    debug( IS_ERR( irqdev.device ), PTR_ERR( irqdev.device ) );
 
     keyio_init();
 
     return 0;
 }
 
-/*================================================================ 
+/*
  * 函数名：Irq_exit
- * 功能描述：卸载驱动模块时会调用该函数
- * 参数：
- *      void
- * 返回值：
- *      成功: 0
- *      失败: 
- * 作者：Yang Mou 2022/1/21
-================================================================*/
+ * 功能描述：释放驱动相关资源
+ * 备忘：驱动卸载时自动执行该函数
+*/
 static void __exit Irq_exit( void )
 {
     free_irq( irqdev.irqkeydesc.irqnum, &irqdev );
