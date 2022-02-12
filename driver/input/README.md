@@ -58,3 +58,42 @@ static void __exit xxx_exit( void )
     input_free_device( inputdev ); /*删除 input_dev*/
 }
 ```
+
+## 上报输入事件
+
+上报函数如下:
+
+```C
+static inline void input_report_key(struct input_dev *dev,unsigned int code, int value)
+void input_report_rel(struct input_dev *dev, unsigned int code, int value)
+void input_report_abs(struct input_dev *dev, unsigned int code, int value)
+void input_report_ff_status(struct input_dev *dev, unsigned int code, int value)
+void input_report_switch(struct input_dev *dev, unsigned int code, int value)
+void input_mt_sync(struct input_dev *dev)
+```
+
+>这些函数底层都是调用void input_event(struct input_dev *dev, unsigned int type, unsigned int code, int value)
+
+在上报事件以后使用 input_sync 函数来告诉 Linux 内核 input 子系统上报结束
+
+void input_sync(struct input_dev *dev)
+
+```C
+void timer_function( unsigned long arg )
+{
+    unsigned char value;
+
+    value = gpio_get_value( keydesc->gpio );
+    if( 0 == value )
+    {
+        /*上报按键值*/
+        input_report_key( input, KEY_0, 1 ); /*最后一个参数1、按下*/
+        input_sync( inputdev ); /*同步事件*/
+    }
+    else
+    {
+        input_report_key( input, KEY_0, 0 ); /*最后一个参数0、松开*/
+        input_sync( inputdev ); /*同步事件*/
+    }
+}
+```
