@@ -2,6 +2,9 @@
 
 static struct input_event inputevent;
 
+/*
+ * ./app /dev/input/event1
+*/
 int main( int argc, char **argv )
 {
     int fd;
