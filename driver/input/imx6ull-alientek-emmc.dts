@@ -153,6 +153,8 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_key>;
 		key-gpio = <&gpio1 18 GPIO_ACTIVE_LOW>;
+		interrupt-parent = <&gpio1>; /*中断控制器为 gpio1*/
+		interrupts = <18 IRQ_TYPE_EDGE_BOTH>; /*上升沿和下降沿触发*/
 		status = "okay";
 	};
 };
@@ -623,20 +625,17 @@
                         >;
                 };
 
-                pinctrl_sai2_hp_det_b: sai2_hp_det_grp {
-                        fsl,pins = <
+        pinctrl_sai2_hp_det_b: sai2_hp_det_grp {
+                    	fsl,pins = <
                                 MX6ULL_PAD_SNVS_TAMPER4__GPIO5_IO04   0x17059
                         >;
                 };
-
-		pinctrl_key: keygrp{
-			fsl,pins = <
-				MX6UL_PAD_UART1_CTS_B__GPIO1_IO18     0xF080
-			>;
-		};
-
+			pinctrl_key: keygrp{
+				fsl,pins = <
+					MX6UL_PAD_UART1_CTS_B__GPIO1_IO18     0xF080
+				>;
+			};
         };
-
 };
 
 
