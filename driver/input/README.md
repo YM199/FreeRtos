@@ -97,3 +97,18 @@ void timer_function( unsigned long arg )
     }
 }
 ```
+
+---
+
+在应用层定义一个 input_dev 类型的变量，使用 read 将数据读取到其中。
+
+```C
+static struct input_event inputevent;
+read( fd, &inputevent, sizeof( inputevent ) );
+inputevent.code  /*按键码*/
+inputevent.value /*按键值*/
+```
+
+> input_report_key( dev->inputdev, 按键码, 按键值 );
+
+按键码用来区分哪个按键
