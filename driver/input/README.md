@@ -59,6 +59,8 @@ static void __exit xxx_exit( void )
 }
 ```
 
+当我们向 Linux 内核成功注册 input_dev 设备以后，会在/dev/input 目录下生成一个名为“eventX(X=0….n)”的文件，这个/dev/input/eventX 就是对应的 input 设备文件。我们读取这个文件就可以获取到输入事件信息，比如按键值什么的。使用read函数读取输入设备文件，也就是/dev/input/eventX，读取到的数据按照 input_event 结构体组织起来。获取到输入事件以后(input_event 结构体类型)使用 switch case 语句来判断事件类型
+
 ## 上报输入事件
 
 上报函数如下:
