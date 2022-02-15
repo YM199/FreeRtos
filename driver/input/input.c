@@ -89,7 +89,7 @@ static int keyio_init( void )
     __set_bit( EV_REP, keyinputdev.inputdev->evbit ); /*重复事件*/
 
     /*设置产生哪些按键值*/
-    __set_bit( KEY_0, keyinputdev.inputdev->keybit );
+    __set_bit( keyinputdev.irqkeydesc.value, keyinputdev.inputdev->keybit );
 
     ret = input_register_device( keyinputdev.inputdev );/*注册 input_dev*/
     debug( ret, ret );
@@ -115,7 +115,7 @@ static int __init keyinput_init( void )
 ================================================================*/
 static void __exit keyinput_exit( void )
 {
-    //gpio_free( keyinputdev.irqkeydesc.gpio ); /*释放GPIO*/
+    gpio_free( keyinputdev.irqkeydesc.gpio ); /*释放GPIO*/
 
     del_timer_sync( &keyinputdev.timer ); /*删除定时器*/
 
