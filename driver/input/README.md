@@ -34,7 +34,7 @@ static int __init xxx_init( void )
     /*第一种设置事件和事件值的方法*/
     __set_bit( EV_KEY, inputdev->evbit ); /*设置产生按键事件*/
     __set_bit( EV_REP, inputdev->evbit ); /*重复事件*/
-    __set_bit( KEY_0, inputdev->evbit );  /*设置产生哪些按键值*/
+    __set_bit( KEY_0, inputdev->keybit );  /*设置产生哪些按键值*/
 
     /*第二种设置事件和事件值的方法*/
     keyinputdev.inputdev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
