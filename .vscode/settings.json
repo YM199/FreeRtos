@@ -1,0 +1,29 @@
+{
+    "files.associations": {
+        "memory": "c",
+        "sstream": "c",
+        "*.txt": "c",
+        "app.h": "c",
+        "noblockio.h": "c",
+        "asyncnoti.h": "c",
+        "typeinfo": "c",
+        "led_driver.h": "c",
+        "interrupt.h": "c",
+        "of_irq.h": "c",
+        "input.h": "c",
+        "*.tcc": "c",
+        "random": "c",
+        "type_traits": "c",
+        "mxc_dispdrv.h": "c",
+        "of_display_timing.h": "c"
+    },
+
+    "markdownlint.config": {
+        "default": true,
+        "MD033": false
+      },
+
+    "todo-tree.tree.scanMode": "current file"
+}
+
+
