@@ -28,33 +28,40 @@ const unsigned char GT9147_CT[]=
 };
 
 /*
- * @description     : 复位GT9147
- * @param - client 	: 要操作的i2c
- * @param - multidev: 自定义的multitouch设备
- * @return          : 0，成功;其他负值,失败
+ * 函数名称: gt9147_ts_reset
+ * 函数功能: 复位GT9147
+ * 函数参数:
+ * 			client 	: 要操作的i2c
+ * 			multidev: 自定义的multitouch设备
  */
 static int gt9147_ts_reset(struct i2c_client *client, struct gt9147_dev *dev)
 {
 	int ret = 0;
 
     /* 申请复位IO*/
-	if (gpio_is_valid(dev->reset_pin)) {  		
+	if (gpio_is_valid(dev->reset_pin)) /*防止指定的gpio号码是错的*/
+	{
 		/* 申请复位IO，并且默认输出高电平 */
-		ret = devm_gpio_request_one(&client->dev,	
-					dev->reset_pin, GPIOF_OUT_INIT_HIGH,
-					"gt9147 reset");
-		if (ret) {
+		ret = devm_gpio_request_one( &client->dev,
+									 dev->reset_pin,
+									 GPIOF_OUT_INIT_HIGH,
+									 "gt9147 reset" );
+		if (ret)
+		{
 			return ret;
 		}
 	}
 
     /* 申请中断IO*/
-	if (gpio_is_valid(dev->irq_pin)) {  		
+	if (gpio_is_valid(dev->irq_pin))
+	{
 		/* 申请复位IO，并且默认输出高电平 */
-		ret = devm_gpio_request_one(&client->dev,	
-					dev->irq_pin, GPIOF_OUT_INIT_HIGH,
-					"gt9147 int");
-		if (ret) {
+		ret = devm_gpio_request_one( &client->dev,
+									 dev->irq_pin,
+									 GPIOF_OUT_INIT_HIGH,
+									 "gt9147 int" );
+		if (ret)
+		{
 			return ret;
 		}
 	}
@@ -85,7 +92,7 @@ static int gt9147_read_regs(struct gt9147_dev *dev, u16 reg, u8 *buf, int len)
     u8 regdata[2];
 	struct i2c_msg msg[2];
 	struct i2c_client *client = (struct i2c_client *)dev->client;
-    
+
     /* GT9147寄存器长度为2个字节 */
     regdata[0] = reg >> 8;
     regdata[1] = reg & 0xFF;
