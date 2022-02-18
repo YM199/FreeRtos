@@ -35,6 +35,8 @@
 #define LCD_X 800
 #define LCD_Y 480
 
+#define FIREWARE 0  /*芯片内置固件已能够使用，无需下载固件*/
+
 struct gt9147_dev {
 	int irq_pin,reset_pin;					/* 中断和复位IO		*/
 	int irqnum;								/* 中断号    		*/

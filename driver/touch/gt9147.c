@@ -4,6 +4,7 @@
 
 struct gt9147_dev gt9147; /*代表gt9147这个设备*/
 
+#if FIREWARE
 const unsigned char GT9147_CT[]=
 {
 	0x48,0xe0,0x01,0x10,0x01,0x05,0x0d,0x00,0x01,0x08,
@@ -26,7 +27,7 @@ const unsigned char GT9147_CT[]=
 	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
 	0xff,0xff,0xff,0xff,
 };
-
+#endif
 /*
  * 函数名称: gt9147_ts_reset
  * 函数功能: 复位GT9147
@@ -237,6 +238,7 @@ static int gt9147_ts_irq(struct i2c_client *client, struct gt9147_dev *dev)
 	return 0;
 }
 
+#if FIREWARE
 /*
  * @description	: 发送GT9147配置参数
  * @param - client: i2c_client
@@ -252,13 +254,14 @@ void gt9147_send_cfg(struct gt9147_dev *dev, unsigned char mode)
 	buf[0] = 0;
 	buf[1] = mode;	/* 是否写入到GT9147 FLASH?  即是否掉电保存 */
 	for(i = 0; i < (sizeof(GT9147_CT)); i++) /* 计算校验和 */
-        buf[0] += GT9147_CT[i];            
+        buf[0] += GT9147_CT[i];
     buf[0] = (~buf[0]) + 1;
 
     /* 发送寄存器配置 */
     gt9147_write_regs(dev, GT_CFGS_REG, (u8 *)GT9147_CT, sizeof(GT9147_CT));
     gt9147_write_regs(dev, GT_CHECK_REG, buf, 2);/* 写入校验和,配置更新标记 */
 }
+#endif
 
 /*
  * 函数名称: gt9147_probe
@@ -289,7 +292,7 @@ int gt9147_probe(struct i2c_client *client, const struct i2c_device_id *id)
     gt9147_write_regs(&gt9147, GT_CTRL_REG, &data, 1); /* 停止软复位 */
     mdelay(100);
 
-#if 0
+#if FIREWARE
     /* 4,初始化GT9147，烧写固件 */
     gt9147_read_regs(&gt9147, GT_CFGS_REG, &data, 1);
     printk("GT9147 ID =%#X\r\n", data);
