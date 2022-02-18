@@ -237,8 +237,13 @@ void gt9147_send_cfg(struct gt9147_dev *dev, unsigned char mode)
     /* 发送寄存器配置 */
     gt9147_write_regs(dev, GT_CFGS_REG, (u8 *)GT9147_CT, sizeof(GT9147_CT));
     gt9147_write_regs(dev, GT_CHECK_REG, buf, 2);/* 写入校验和,配置更新标记 */
-} 
+}
 
+/*
+ * 函数名称: gt9147_probe
+ * 函数功能: 驱动和设备匹配成功后进行初始化操作
+ *
+*/
 int gt9147_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
     u8 data, ret;
@@ -287,16 +292,18 @@ int gt9147_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	__set_bit(EV_ABS, gt9147.input->evbit);
 	__set_bit(BTN_TOUCH, gt9147.input->keybit);
 
+	/*上报单点触摸*/
 	input_set_abs_params(gt9147.input, ABS_X, 0, LCD_X, 0, 0);
 	input_set_abs_params(gt9147.input, ABS_Y, 0, LCD_Y, 0, 0);
+	/*上报多点触摸*/
 	input_set_abs_params(gt9147.input, ABS_MT_POSITION_X,0, LCD_X, 0, 0);
 	input_set_abs_params(gt9147.input, ABS_MT_POSITION_Y,0, LCD_Y, 0, 0);
-	ret = input_mt_init_slots(gt9147.input, MAX_SUPPORT_POINTS, 0);
+	ret = input_mt_init_slots(gt9147.input, MAX_SUPPORT_POINTS, 0); /*初始化slot, 也就是最大触摸点数量*/
 	if (ret) {
 		goto fail;
 	}
 
-	ret = input_register_device(gt9147.input);
+	ret = input_register_device(gt9147.input); /*注册input_dev*/
 	if (ret)
 		goto fail;
 
