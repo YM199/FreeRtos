@@ -32,6 +32,9 @@
 #define GT_TP5_REG 		        0X816F	/* 第五个触摸点数据地址   */
 #define MAX_SUPPORT_POINTS      5       /* 最多5点电容触摸 */
 
+#define LCD_X 800
+#define LCD_Y 480
+
 struct gt9147_dev {
 	int irq_pin,reset_pin;					/* 中断和复位IO		*/
 	int irqnum;								/* 中断号    		*/

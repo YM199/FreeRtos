@@ -2,7 +2,7 @@
 #include "include/gt9147.h"
 
 
-struct gt9147_dev gt9147;
+struct gt9147_dev gt9147; /*代表gt9147这个设备*/
 
 const unsigned char GT9147_CT[]=
 {
@@ -119,19 +119,20 @@ static int gt9147_read_regs(struct gt9147_dev *dev, u16 reg, u8 *buf, int len)
 }
 
 /*
- * @description	: 向GT9147多个寄存器写入数据
- * @param - dev:  GT9147设备
- * @param - reg:  要写入的寄存器首地址
- * @param - val:  要写入的数据缓冲区
- * @param - len:  要写入的数据长度
- * @return 	  :   操作结果
+ * 函数名称: gt9147_write_regs
+ * 函数功能: 向GT9147多个寄存器写入数据
+ * 函数参数:
+ *          dev:  GT9147设备
+ *          reg:  要写入的寄存器首地址
+ *          val:  要写入的数据缓冲区
+ *          len:  要写入的数据长度
  */
 static s32 gt9147_write_regs(struct gt9147_dev *dev, u16 reg, u8 *buf, u8 len)
 {
-	u8 b[256];
+	u8 b[256]; /*TODO: 可以改为动态分配*/
 	struct i2c_msg msg;
 	struct i2c_client *client = (struct i2c_client *)dev->client;
-	
+
 	b[0] = reg >> 8;			/* 寄存器首地址低8位 */
     b[1] = reg & 0XFF;			/* 寄存器首地址高8位 */
 	memcpy(&b[2],buf,len);		/* 将要写入的数据拷贝到数组b里面 */
@@ -262,12 +263,14 @@ int gt9147_probe(struct i2c_client *client, const struct i2c_device_id *id)
     gt9147_write_regs(&gt9147, GT_CTRL_REG, &data, 1); /* 停止软复位 */
     mdelay(100);
 
-    /* 4,初始化GT9147，烧写固件 
+#if 0
+    /* 4,初始化GT9147，烧写固件 */
     gt9147_read_regs(&gt9147, GT_CFGS_REG, &data, 1);
     printk("GT9147 ID =%#X\r\n", data);
     if(data <  GT9147_CT[0]) {
        gt9147_send_cfg(&gt9147, 0);   芯片内置固件已能够使用，无需下载固件
-    } */
+    }
+#endif
 
     /* 5，input设备注册 */
 	gt9147.input = devm_input_allocate_device(&client->dev);
@@ -276,17 +279,18 @@ int gt9147_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto fail;
 	}
 	gt9147.input->name = client->name;
-	gt9147.input->id.bustype = BUS_I2C;
+	gt9147.input->id.bustype = BUS_I2C; /*TODO*/
 	gt9147.input->dev.parent = &client->dev;
 
-	__set_bit(EV_KEY, gt9147.input->evbit);
+	/*上报事件*/
+	__set_bit(EV_KEY, gt9147.input->evbit); /*TODO*/
 	__set_bit(EV_ABS, gt9147.input->evbit);
 	__set_bit(BTN_TOUCH, gt9147.input->keybit);
 
-	input_set_abs_params(gt9147.input, ABS_X, 0, 480, 0, 0);
-	input_set_abs_params(gt9147.input, ABS_Y, 0, 272, 0, 0);
-	input_set_abs_params(gt9147.input, ABS_MT_POSITION_X,0, 480, 0, 0);
-	input_set_abs_params(gt9147.input, ABS_MT_POSITION_Y,0, 272, 0, 0);	     
+	input_set_abs_params(gt9147.input, ABS_X, 0, LCD_X, 0, 0);
+	input_set_abs_params(gt9147.input, ABS_Y, 0, LCD_Y, 0, 0);
+	input_set_abs_params(gt9147.input, ABS_MT_POSITION_X,0, LCD_X, 0, 0);
+	input_set_abs_params(gt9147.input, ABS_MT_POSITION_Y,0, LCD_Y, 0, 0);
 	ret = input_mt_init_slots(gt9147.input, MAX_SUPPORT_POINTS, 0);
 	if (ret) {
 		goto fail;
