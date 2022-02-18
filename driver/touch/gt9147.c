@@ -313,14 +313,13 @@ int gt9147_remove(struct i2c_client *client)
 
 /*
  *  传统驱动匹配表
- */ 
+ */
 const struct i2c_device_id gt9147_id_table[] = {
-	{ "goodix,gt9147", 0, },
-    { /* sentinel */ }
+    { /* sentinel */ },
 };
 
 /*
- * 设备树匹配表 
+ * 设备树匹配表
  */
 const struct of_device_id gt9147_of_match_table[] = {
     {.compatible = "goodix,gt9147" },
