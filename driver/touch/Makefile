@@ -6,7 +6,7 @@ obj-m := $(DEVICE_NAME).o
 
 target: kernel_module app
 
-kernel_module: $(DEVICE_NAME).h
+kernel_module:
 	$(MAKE) -C $(KERNELDIR) M=$(CURRENT_PATH) modules
 
 app: app.c app.h
