@@ -187,7 +187,7 @@ static irqreturn_t gt9147_irq_handler( int irq, void *dev_id )
 		/* 单点触摸按下 */
         gt9147_read_regs(dev, GT_TP1_REG, touch_data, 5);
         id = touch_data[0] & 0x0F; /*触摸点ID*/
-        if( id == 0 ) /*TODO：打印下id*/
+        if( id == 0 )
 		{
             input_x  = touch_data[1] | (touch_data[2] << 8);
             input_y  = touch_data[3] | (touch_data[4] << 8);
@@ -361,7 +361,7 @@ int gt9147_remove(struct i2c_client *client)
  * 结构名称: gt9147_id_table
  * 结构功能: 传统驱动匹配表
  * #BUG: 明明没用这个匹配，但是把他删除掉就匹配不成功，而且也没填匹配内容
- * 可能原因是设置总线类型的时候用到了：gt9147.input->id.bustype = BUS_I2C; /*总线类型*/
+ * 可能原因是设置总线类型的时候用到了：gt9147.input->id.bustype = BUS_I2C; 总线类型
  */
 const struct i2c_device_id gt9147_id_table[] = {
     { /* sentinel */ },
