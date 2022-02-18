@@ -312,14 +312,17 @@ int gt9147_remove(struct i2c_client *client)
 }
 
 /*
- *  传统驱动匹配表
+ * 结构名称: gt9147_id_table
+ * 结构功能: 传统驱动匹配表
+ * #BUG: 明明没用这个匹配，但是把他删除掉就匹配不成功，而且也没填匹配内容
  */
 const struct i2c_device_id gt9147_id_table[] = {
     { /* sentinel */ },
 };
 
 /*
- * 设备树匹配表
+ * 结构名称: gt9147_of_match_table
+ * 结构功能: 设备树匹配表
  */
 const struct of_device_id gt9147_of_match_table[] = {
     {.compatible = "goodix,gt9147" },
@@ -329,9 +332,9 @@ const struct of_device_id gt9147_of_match_table[] = {
 /* i2c驱动结构体 */
 struct i2c_driver gt9147_i2c_driver = {
     .driver = {
-        .name  = "gt9147",
+        .name  = "gt9147_driver", /*驱动名字*/
         .owner = THIS_MODULE,
-        .of_match_table = gt9147_of_match_table,
+        .of_match_table = gt9147_of_match_table, /*和设备匹配*/
     },
     .id_table = gt9147_id_table,
     .probe  = gt9147_probe,
