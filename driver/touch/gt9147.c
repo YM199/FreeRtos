@@ -79,12 +79,13 @@ static int gt9147_ts_reset(struct i2c_client *client, struct gt9147_dev *dev)
 }
 
 /*
- * @description	: 从GT9147读取多个寄存器数据
- * @param - dev:  GT9147设备
- * @param - reg:  要读取的寄存器首地址
- * @param - buf:  读取到的数据
- * @param - len:  要读取的数据长度
- * @return 		: 操作结果
+ * 函数名称: gt9147_read_regs
+ * 函数功能: 从GT9147读取多个寄存器数据
+ * 函数参数:
+ * 			dev:  GT9147设备
+ * 			reg:  要读取的寄存器首地址
+ * 			buf:  读取到的数据
+ * 			len:  要读取的数据长度
  */
 static int gt9147_read_regs(struct gt9147_dev *dev, u16 reg, u8 *buf, int len)
 {
@@ -146,7 +147,12 @@ static s32 gt9147_write_regs(struct gt9147_dev *dev, u16 reg, u8 *buf, u8 len)
 	return i2c_transfer(client->adapter, &msg, 1);
 }
 
-static irqreturn_t gt9147_irq_handler(int irq, void *dev_id)
+/*
+ * 函数名称: gt9147_irq_handler
+ * 函数功能: 读取触摸点数据
+ * 函数备注: 触摸中断的回调函数
+*/
+static irqreturn_t gt9147_irq_handler( int irq, void *dev_id )
 {
     int touch_num = 0;
     int input_x, input_y;
@@ -156,35 +162,46 @@ static irqreturn_t gt9147_irq_handler(int irq, void *dev_id)
     u8 touch_data[5];
     struct gt9147_dev *dev = dev_id;
 
-    ret = gt9147_read_regs(dev, GT_GSTID_REG, &data, 1);
-    if (data == 0x00)  {     /* 没有触摸数据，直接返回 */
+    ret = gt9147_read_regs( dev, GT_GSTID_REG, &data, 1 );
+    if( data == 0x00 )
+	{
+		/*没有触摸数据，直接返回*/
         goto fail;
-    } else {                 /* 统计触摸点数据 */
+    }
+	else
+	{
+		/* 统计触摸点数据 */
         touch_num = data & 0x0f;
     }
 
     /* 由于GT9147没有硬件检测每个触摸点按下和抬起，因此每个触摸点的抬起和按
-     * 下不好处理，尝试过一些方法，但是效果都不好，因此这里暂时使用单点触摸 
+     * 下不好处理，尝试过一些方法，但是效果都不好，因此这里暂时使用单点触摸
      */
-    if(touch_num) {         /* 单点触摸按下 */
+    if( touch_num )
+	{
+		/* 单点触摸按下 */
         gt9147_read_regs(dev, GT_TP1_REG, touch_data, 5);
-        id = touch_data[0] & 0x0F;
-        if(id == 0) {
+        id = touch_data[0] & 0x0F; /*触摸点ID*/
+        if( id == 0 ) /*TODO：打印下id*/
+		{
             input_x  = touch_data[1] | (touch_data[2] << 8);
             input_y  = touch_data[3] | (touch_data[4] << 8);
 
-            input_mt_slot(dev->input, id);
-		    input_mt_report_slot_state(dev->input, MT_TOOL_FINGER, true);
-		    input_report_abs(dev->input, ABS_MT_POSITION_X, input_x);
-		    input_report_abs(dev->input, ABS_MT_POSITION_Y, input_y);
+            input_mt_slot(dev->input, id); /*上报触摸点*/
+		    input_mt_report_slot_state(dev->input, MT_TOOL_FINGER, true); /*添加新的触摸点, 触摸类型为手指*/
+		    input_report_abs(dev->input, ABS_MT_POSITION_X, input_x); /*上报触摸点 x 坐标*/
+		    input_report_abs(dev->input, ABS_MT_POSITION_Y, input_y); /*上报触摸点 y 坐标*/
         }
-    } else if(touch_num == 0){                /* 单点触摸释放 */
-        input_mt_slot(dev->input, id);
-        input_mt_report_slot_state(dev->input, MT_TOOL_FINGER, false);
+    }
+	else if( touch_num == 0 )
+	{
+		/*单点触摸释放*/
+        input_mt_slot(dev->input, id); /*上报触摸点*/
+        input_mt_report_slot_state(dev->input, MT_TOOL_FINGER, false); /*移除触摸点*/
     }
 
 	input_mt_report_pointer_emulation(dev->input, true);
-    input_sync(dev->input);
+    input_sync(dev->input); /*上报结束*/
 
     data = 0x00;                /* 向0X814E寄存器写0 */
     gt9147_write_regs(dev, GT_GSTID_REG, &data, 1);
@@ -195,19 +212,23 @@ fail:
 
 
 /*
- * @description     : GT9147中断初始化
- * @param - client 	: 要操作的i2c
- * @param - multidev: 自定义的multitouch设备
- * @return          : 0，成功;其他负值,失败
+ * 函数名称: gt9147_ts_irq
+ * 函数功能: GT9147中断初始化
+ * 函数参数:
+ * 			client 	: 要操作的i2c
+ * 			multidev: 自定义的multitouch设备
  */
 static int gt9147_ts_irq(struct i2c_client *client, struct gt9147_dev *dev)
 {
 	int ret = 0;
 
 	/* 2，申请中断,client->irq就是IO中断， */
-	ret = devm_request_threaded_irq(&client->dev, client->irq, NULL,
-					gt9147_irq_handler, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-					client->name, &gt9147);
+	ret = devm_request_threaded_irq( &client->dev,
+									 client->irq,
+									 NULL,
+									 gt9147_irq_handler,
+									 IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+									 client->name, &gt9147 );
 	if (ret) {
 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
 		return ret;
