@@ -131,7 +131,9 @@ static int gt9147_read_regs(struct gt9147_dev *dev, u16 reg, u8 *buf, int len)
  */
 static s32 gt9147_write_regs(struct gt9147_dev *dev, u16 reg, u8 *buf, u8 len)
 {
-	u8 b[256]; /*TODO: 可以改为动态分配*/
+	//u8 b[256]; /*改为动态分配*/
+	int ret = 0;
+	u8 *b = (u8 *)kmalloc( len + 2, GFP_KERNEL );
 	struct i2c_msg msg;
 	struct i2c_client *client = (struct i2c_client *)dev->client;
 
@@ -145,7 +147,9 @@ static s32 gt9147_write_regs(struct gt9147_dev *dev, u16 reg, u8 *buf, u8 len)
 	msg.buf = b;				/* 要写入的数据缓冲区 */
 	msg.len = len + 2;			/* 要写入的数据长度 */
 
-	return i2c_transfer(client->adapter, &msg, 1);
+	ret = i2c_transfer(client->adapter, &msg, 1);
+	kfree(b);
+	return ret;
 }
 
 /*
@@ -308,11 +312,11 @@ int gt9147_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto fail;
 	}
 	gt9147.input->name = client->name;
-	gt9147.input->id.bustype = BUS_I2C; /*TODO*/
+	gt9147.input->id.bustype = BUS_I2C; /*总线类型*/
 	gt9147.input->dev.parent = &client->dev;
 
 	/*上报事件*/
-	__set_bit(EV_KEY, gt9147.input->evbit); /*TODO*/
+	__set_bit(EV_KEY, gt9147.input->evbit);
 	__set_bit(EV_ABS, gt9147.input->evbit);
 	__set_bit(BTN_TOUCH, gt9147.input->keybit);
 
@@ -357,6 +361,7 @@ int gt9147_remove(struct i2c_client *client)
  * 结构名称: gt9147_id_table
  * 结构功能: 传统驱动匹配表
  * #BUG: 明明没用这个匹配，但是把他删除掉就匹配不成功，而且也没填匹配内容
+ * 可能原因是设置总线类型的时候用到了：gt9147.input->id.bustype = BUS_I2C; /*总线类型*/
  */
 const struct i2c_device_id gt9147_id_table[] = {
     { /* sentinel */ },
