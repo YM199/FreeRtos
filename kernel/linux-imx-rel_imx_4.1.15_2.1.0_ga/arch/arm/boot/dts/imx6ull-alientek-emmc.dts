@@ -68,7 +68,7 @@
 			regulator-name = "VSD_3V3";
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
-			gpio = <&gpio1 9 GPIO_ACTIVE_HIGH>;
+			/*gpio = <&gpio1 9 GPIO_ACTIVE_HIGH>;*/
 			enable-active-high;
 		};
 
@@ -254,6 +254,17 @@
 	pinctrl-0 = <&pinctrl_i2c2>;
 	status = "okay";
 
+	gt9147:gt9147@14 {
+		compatible = "goodix,gt9147","goodix,gt9xx";
+		reg = <0x14>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_tsc &pinctrl_tsc_reset >;
+		interrupt-parent = <&gpio1>;
+		interrupts = <9 0>;
+		reset-gpios = <&gpio5 9 GPIO_ACTIVE_LOW>;
+		interrupt-gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
+	};
+
 	codec: wm8960@1a {
 		compatible = "wlf,wm8960";
 		reg = <0x1a>;
@@ -291,7 +302,7 @@
 			fsl,pins = <
 				MX6UL_PAD_UART1_RTS_B__GPIO1_IO19	0x17059 /* SD1 CD */
 				MX6UL_PAD_GPIO1_IO05__USDHC1_VSELECT	0x17059 /* SD1 VSELECT */
-				MX6UL_PAD_GPIO1_IO09__GPIO1_IO09        0x17059 /* SD1 RESET */
+				/*MX6UL_PAD_GPIO1_IO09__GPIO1_IO09        0x17059*/ /* SD1 RESET */
 			>;
 		};
 
@@ -368,6 +379,7 @@
 			>;
 		};
 
+		/*LCD数据引脚*/
 		pinctrl_lcdif_dat: lcdifdatgrp {
 			fsl,pins = <
 				MX6UL_PAD_LCD_DATA00__LCDIF_DATA00  0x79
@@ -397,6 +409,7 @@
 			>;
 		};
 
+		/*LCD控制引脚*/
 		pinctrl_lcdif_ctrl: lcdifctrlgrp {
 			fsl,pins = <
 				MX6UL_PAD_LCD_CLK__LCDIF_CLK	    0x79
@@ -406,6 +419,7 @@
 			>;
 		};
 
+		/*LCD PWM背光引脚*/
 		pinctrl_pwm1: pwm1grp {
 			fsl,pins = <
 				MX6UL_PAD_GPIO1_IO08__PWM1_OUT   0x110b0
@@ -435,10 +449,13 @@
 
 		pinctrl_tsc: tscgrp {
 			fsl,pins = <
-				MX6UL_PAD_GPIO1_IO01__GPIO1_IO01	0xb0
-				MX6UL_PAD_GPIO1_IO02__GPIO1_IO02	0xb0
-				MX6UL_PAD_GPIO1_IO03__GPIO1_IO03	0xb0
-				MX6UL_PAD_GPIO1_IO04__GPIO1_IO04	0xb0
+				MX6UL_PAD_GPIO1_IO09__GPIO1_IO09 0x49 /* TSC_INT */
+			>;
+		};
+
+		pinctrl_tsc_reset: tsc_reset {
+			fsl,pins = <
+				MX6ULL_PAD_SNVS_TAMPER9__GPIO5_IO09 0x10B0
 			>;
 		};
 
@@ -596,11 +613,12 @@
                                 MX6ULL_PAD_SNVS_TAMPER3__GPIO5_IO03      0x79
                         >;
                 };
-		
+
+		/*LCD 复位引脚*/
 		pinctrl_lcdif_reset: lcdifresetgrp {
                         fsl,pins = <
                                 /* used for lcd reset */
-                                MX6ULL_PAD_SNVS_TAMPER9__GPIO5_IO09  0x79
+                                /*MX6ULL_PAD_SNVS_TAMPER9__GPIO5_IO09  0x79*/
                         >;
                 };
 
@@ -624,33 +642,35 @@
 
 &lcdif {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lcdif_dat
+	pinctrl-0 = <&pinctrl_lcdif_dat /*使用到的IO*/
 		     &pinctrl_lcdif_ctrl
-		     &pinctrl_lcdif_reset>;
+		     &pinctrl_lcdif_reset>; /*正点原子没用到pinctrl_lcdif_reset，可删掉*/
 	display = <&display0>;
 	status = "okay";
 
 	display0: display {
-		bits-per-pixel = <16>;
-		bus-width = <24>;
+		/* LCD 属性信息 */
+		bits-per-pixel = <24>;  /*一个像素占用几个bit*/
+		bus-width = <24>;		/*总线宽度*/
 
+		/* 时序信息 */
 		display-timings {
 			native-mode = <&timing0>;
 			timing0: timing0 {
-			clock-frequency = <9200000>;
-			hactive = <480>;
-			vactive = <272>;
-			hfront-porch = <8>;
-			hback-porch = <4>;
-			hsync-len = <41>;
-			vback-porch = <2>;
-			vfront-porch = <4>;
-			vsync-len = <10>;
+			clock-frequency = <31000000>;/*LCD像素时钟，单位Hz*/
+			hactive = <800>;             /*LCD X 轴像素个数*/
+			vactive = <480>;             /*LCD Y 轴像素个数*/
+			hfront-porch = <40>;         /*LCD hfp 参数*/
+			hback-porch = <88>;			 /*LCD hbp 参数*/
+			hsync-len = <48>;			 /*LCD hspw 参数*/
+			vback-porch = <32>;			 /*LCD vbp 参数*/
+			vfront-porch = <13>;		 /*LCD vfp 参数*/
+			vsync-len = <3>;			 /*LCD vspw 参数*/
 
-			hsync-active = <0>;
-			vsync-active = <0>;
-			de-active = <1>;
-			pixelclk-active = <0>;
+			hsync-active = <0>; 		 /*hsync 数据线极性*/
+			vsync-active = <0>;			 /*vsync 数据线极性*/
+			de-active = <1>;			 /*de 数据线极性*/
+			pixelclk-active = <0>;		 /*clk 数据线先极性*/
 			};
 		};
 	};
@@ -698,7 +718,7 @@
 &tsc {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_tsc>;
-	xnur-gpio = <&gpio1 3 GPIO_ACTIVE_LOW>;
+	/*xnur-gpio = <&gpio1 3 GPIO_ACTIVE_LOW>;*/
 	measure-delay-time = <0xffff>;
 	pre-charge-time = <0xfff>;
 	status = "okay";
