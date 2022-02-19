@@ -263,6 +263,7 @@
 		interrupts = <9 0>;
 		reset-gpios = <&gpio5 9 GPIO_ACTIVE_LOW>;
 		interrupt-gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
+		status = "okay";
 	};
 
 	codec: wm8960@1a {
@@ -449,7 +450,7 @@
 
 		pinctrl_tsc: tscgrp {
 			fsl,pins = <
-				MX6UL_PAD_GPIO1_IO09__GPIO1_IO09 0x49 /* TSC_INT */
+				MX6UL_PAD_GPIO1_IO09__GPIO1_IO09 0x10B0 /* TSC_INT */
 			>;
 		};
 
