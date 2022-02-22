@@ -15,7 +15,14 @@
         "random": "c",
         "type_traits": "c",
         "mxc_dispdrv.h": "c",
-        "of_display_timing.h": "c"
+        "of_display_timing.h": "c",
+        "gt9147.h": "c",
+        "module.h": "c",
+        "lvgl.h": "c",
+        "types.h": "c",
+        "pthread.h": "c",
+        "time.h": "c",
+        "fbdev.h": "c"
     },
 
     "markdownlint.config": {
