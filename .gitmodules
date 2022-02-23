@@ -1,0 +1,4 @@
+[submodule "lvgl"]
+	path = lvgl
+	url = git@github.com:YM199/LVGL.git
+	branch = main
